@@ -11,7 +11,7 @@ if (empty($symbol) || !preg_match('/^[a-zA-Z0-9_-]+\.svg$/', $symbol)) {
 }
 
 // Ruta al archivo SVG
-$svgPath = __DIR__ . '../assets/symbols/' . $symbol;
+$svgPath = __DIR__ . "../assets/symbols/" . $symbol;
 
 // Verificar que el archivo exista
 if (file_exists($svgPath) && is_file($svgPath)) {
