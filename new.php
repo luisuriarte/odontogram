@@ -307,11 +307,15 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		// Load dental history
 		function loadHistory() {
-			console.log("<?php echo xl('Loading dental history from'); ?> 2000-01-01 <?php echo xl('to'); ?> 2025-03-12 <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
+			console.log("<?php echo xl('Loading dental history from'); ?> " + startDate + " <?php echo xl('to'); ?> " + endDate + " <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
 			$.ajax({
-				url: '/interface/forms/odontogram/php/get_history.php',
-				type: 'POST',
-				data: { start: '2000-01-01', end: '2025-03-12', filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] },
+            url: '/interface/forms/odontogram/php/get_history.php',
+            type: 'POST',
+            data: { 
+                start: startDate, 
+                end: endDate, 
+                filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] 
+            },
 				dataType: 'json',
 				success: function(history) {
 					console.log("<?php echo xl('Dental history loaded:'); ?>", history);
