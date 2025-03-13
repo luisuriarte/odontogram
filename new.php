@@ -26,7 +26,7 @@ if (isset($_POST['system'])) {
     }
 }
 
-$startDate = $_POST['start_date'] ?? '2000-01-01';
+$start = $_POST['start'] ?? date('Y-m-d', strtotime('-10 years'));
 $endDate = $_POST['end_date'] ?? date('Y-m-d');
 ?>
 
@@ -242,7 +242,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			}
 
 			$.ajax({
-				url: '/interface/forms/odontogram/get_tooth_details.php',
+				url: '/interface/forms/odontogram/php/get_tooth_details.php',
 				type: 'POST',
 				data: { svg_id: svgId, user_id: userId },
 				dataType: 'json',
@@ -309,7 +309,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		function loadHistory() {
 			console.log("<?php echo xl('Loading dental history from'); ?> 2000-01-01 <?php echo xl('to'); ?> 2025-03-12 <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
 			$.ajax({
-				url: '/interface/forms/odontogram/get_history.php',
+				url: '/interface/forms/odontogram/php/get_history.php',
 				type: 'POST',
 				data: { start: '2000-01-01', end: '2025-03-12', filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] },
 				dataType: 'json',
@@ -344,7 +344,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		function loadOptions(type) {
 			console.log("<?php echo xl('Loading options for intervention type:'); ?> " + type);
 			$.ajax({
-				url: '/interface/forms/odontogram/get_options.php',
+				url: '/interface/forms/odontogram/php/get_options.php',
 				type: 'POST',
 				data: { type: type },
 				dataType: 'json',
@@ -380,7 +380,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			$('#editCode').val(code || '');
 
 			if (symbolFile) {
-				var svgPath = '/interface/forms/odontogram/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
+				var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
 				console.log("<?php echo xl('Attempting to load symbol SVG from:'); ?> " + svgPath);
 				$('#symbol-preview').html(`<img src="${svgPath}" alt="${selectedOption.text()} Icon" class="me-2" style="width: 30px; height: 20px;">`);
 			} else {
@@ -448,7 +448,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			console.log("<?php echo xl('Data to be saved:'); ?> ", data);
 
 			$.ajax({
-				url: '/interface/forms/odontogram/save_odontogram.php',
+				url: '/interface/forms/odontogram/php/save_odontogram.php',
 				type: 'POST',
 				contentType: 'application/json',
 				data: JSON.stringify(data),
@@ -490,7 +490,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			var symbolHeight = 30;
 
 			// Construct symbol path
-			var svgPath = '/interface/forms/odontogram/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
+			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
 
 			// Add symbol to history layer with central symmetry
 			var image = historyLayer.image(svgPath)

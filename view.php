@@ -80,7 +80,7 @@ while ($row = sqlFetchArray($result)) {
 
                 // Superponer los símbolos de las intervenciones
                 <?php foreach ($interventions as $intervention) { ?>
-                    draw.image('/interface/forms/odontogram/get_symbol.php?symbol=<?php echo urlencode($intervention['symbol']); ?>')
+                    draw.image('/interface/forms/odontogram/php/get_symbol.php?symbol=<?php echo urlencode($intervention['symbol']); ?>')
                         .size(30, 30)
                         .move($('#<?php echo js_escape($intervention['svg_id']); ?>').attr('x'), $('#<?php echo js_escape($intervention['svg_id']); ?>').attr('y'));
                 <?php } ?>
