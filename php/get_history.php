@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require_once("../../globals.php");
+require_once("../../../globals.php");
 
 $start = $_POST['start'] ?? date('Y-m-d', strtotime('-10 years'));
 $end = $_POST['end'] ?? date('Y-m-d');

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="1047.015"
-   height="703.67554"
+   width="1048"
+   height="704"
    version="1.1"
    id="svg6"
    sodipodi:docname="odontogram.svg"
@@ -566,7 +566,7 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="1.1412703"
-     inkscape:cx="435.47966"
+     inkscape:cx="474.4713"
      inkscape:cy="369.3253"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
@@ -666,7 +666,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultFirstMolarMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 121.46758,555.04794 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 121.46758,555.04794 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultFirstMolarMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultFirstMolarMandibularRight" /><rect
@@ -692,7 +692,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultSecondPremolarMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 183.48741,555.04794 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 183.48741,555.04794 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultSecondPremolarMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultSecondPremolarMandibularRight" /><rect
@@ -718,7 +718,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultFirstPremolarMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 246.06486,555.04794 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 246.06486,555.04794 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultFirstPremolarMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultFirstPremolarMandibularRight" /><rect
@@ -744,7 +744,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultCanineMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 307.87884,554.99121 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 307.87884,554.99121 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultCanineMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultCanineMandibularRight" /><rect
@@ -770,7 +770,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultLateralIncisorMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 370.23215,554.68309 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 370.23215,554.68309 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultLateralIncisorMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultLateralIncisorMandibularRight" /><rect
@@ -796,7 +796,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultCentralIncisorMandibularRight" /><path
        style="fill:none;stroke:#002b00"
-       d="m 432.8217,554.53658 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 432.8217,554.53658 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultCentralIncisorMandibularRight"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultCentralIncisorMandibularRight" /><rect
@@ -822,7 +822,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultCentralIncisorMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 495.18506,554.72956 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 495.18506,554.72956 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultCentralIncisorMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultCentralIncisorMandibularLeft" /><rect
@@ -848,7 +848,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultLateralIncisorMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 557.12158,554.72956 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 557.12158,554.72956 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultLateralIncisorMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultLateralIncisorMandibularLeft" /><rect
@@ -874,7 +874,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultCanineMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 618.92827,554.72956 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 618.92827,554.72956 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultCanineMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultCanineMandibularLeft" /><rect
@@ -900,7 +900,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultFirstPremolarMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 680.9481,554.72956 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 680.9481,554.72956 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultFirstPremolarMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultFirstPremolarMandibularLeft" /><rect
@@ -926,7 +926,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultSecondPremolarMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 743.52555,554.72956 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 743.52555,554.72956 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultSecondPremolarMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultSecondPremolarMandibularLeft" /><rect
@@ -952,7 +952,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultFirstMolarMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 805.33953,554.67282 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 805.33953,554.67282 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultFirstMolarMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultFirstMolarMandibularLeft" /><rect
@@ -978,7 +978,7 @@
        sodipodi:nodetypes="ccccc"
        inkscape:label="Mesial_AdultSecondMolarMandibularLeft" /><path
        style="fill:none;stroke:#002b00"
-       d="m 867.69284,554.3647 -0.15493,57.75729 17.67739,-16.68118 0,-25.01548 z"
+       d="m 867.69284,554.3647 -0.15493,57.75729 17.67739,-16.68118 v -25.01548 z"
        id="Distal_AdultSecondMolarMandibularLeft"
        sodipodi:nodetypes="ccccc"
        inkscape:label="Distal_AdultSecondMolarMandibularLeft" /><rect

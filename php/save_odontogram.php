@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require_once("../../globals.php");
+require_once("../../../globals.php");
 require_once("$srcdir/forms.inc.php");
 
 if (!isset($_SESSION['authUser'])) {

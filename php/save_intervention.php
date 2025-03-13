@@ -1,5 +1,5 @@
 <?php
-require_once("../../globals.php");
+require_once("../../../globals.php");
 require_once("$srcdir/sql.inc");
 
 header('Content-Type: application/json');

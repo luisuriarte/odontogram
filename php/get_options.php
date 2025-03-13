@@ -3,7 +3,7 @@
 ob_start();
 
 // Cargar globals.php para definir $GLOBALS y funciones de OpenEMR
-require_once("../../globals.php");
+require_once("../../../globals.php");
 
 // Establecer encabezado JSON
 header('Content-Type: application/json');

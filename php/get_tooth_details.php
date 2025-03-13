@@ -1,5 +1,5 @@
 <?php
-require_once("../../globals.php");
+require_once("../../../globals.php");
 
 if (isset($_POST['svg_id']) && isset($_POST['user_id'])) {
     $svgId = $_POST['svg_id'];

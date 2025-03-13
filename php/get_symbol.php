@@ -1,5 +1,5 @@
 <?php
-require_once("../../globals.php"); // Carga la autenticación y configuración de OpenEMR
+require_once("../../../globals.php"); // Carga la autenticación y configuración de OpenEMR
 
 // Obtener el nombre del archivo SVG desde la solicitud GET
 $symbol = $_GET['symbol'] ?? '';
