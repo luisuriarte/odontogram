@@ -305,17 +305,18 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			console.error("<?php echo xl('Error loading SVG:'); ?> " + textStatus);
 		});
 
-		// Load dental history
 		function loadHistory() {
-			console.log("<?php echo xl('Loading dental history from'); ?> " + startDate + " <?php echo xl('to'); ?> " + endDate + " <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
+			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>'; // Usa input o valor predeterminado (2015-03-13)
+			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';       // Usa input o valor predeterminado (2025-03-13)
+			console.log("<?php echo xl('Loading dental history from'); ?> " + historyStartDate + " <?php echo xl('to'); ?> " + historyEndDate + " <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
 			$.ajax({
-            url: '/interface/forms/odontogram/php/get_history.php',
-            type: 'POST',
-            data: { 
-                start: startDate, 
-                end: endDate, 
-                filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] 
-            },
+				url: '/interface/forms/odontogram/php/get_history.php',
+				type: 'POST',
+				data: { 
+					start: historyStartDate, 
+					end: historyEndDate, 
+					filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] 
+				},
 				dataType: 'json',
 				success: function(history) {
 					console.log("<?php echo xl('Dental history loaded:'); ?>", history);
