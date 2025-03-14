@@ -1,1 +1,1 @@
-Formulario Odontogramas para Oftalmólogos Para usa en OpenEMR
+Formulario Odontogramas para Oftalmólogos Para usar en OpenEMR
