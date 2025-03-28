@@ -56,6 +56,7 @@ if (!$odontogram_id) {
     exit;
 }
 
+// Insertar en form_odontogram_history
 $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, option_id, date, symbol, code, description, user, groupname, authorized, activity) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $params = [
@@ -75,11 +76,14 @@ $params = [
 ];
 
 try {
-    $result = sqlInsert($sql, $params);
-    if ($result) {
+    $history_id = sqlInsert($sql, $params);
+    if ($history_id) {
+        // Registrar el formulario en forms (usamos un ID de formulario general si existe)
+        $form_id = sqlInsert("INSERT INTO form_odontogram (svg_id) VALUES (?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)", [$tooth_id]);
+        addForm($encounter, "Odontogram", $form_id, "odontogram", $pid, $user, $groupname, $authorized);
         ob_end_clean();
         header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'id' => $result]);
+        echo json_encode(['success' => true, 'id' => $history_id]);
     } else {
         throw new Exception('Insert failed');
     }
@@ -89,3 +93,4 @@ try {
     echo json_encode(['error' => xl('Failed to save data'), 'details' => $e->getMessage()]);
 }
 exit;
+?>

@@ -2,7 +2,7 @@
 require_once '../../../globals.php';
 
 $symbol = $_GET['symbol'] ?? '';
-$symbolPath = dirname(__FILE__) . "/../assets/svg/$symbol";
+$symbolPath = dirname(__FILE__) . "/../assets/symbols/$symbol";
 
 error_log("Attempting to load: $symbolPath"); // Añade esto para depurar
 if (file_exists($symbolPath)) {

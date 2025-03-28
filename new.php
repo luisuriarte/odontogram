@@ -320,13 +320,18 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				dataType: 'json',
 				success: function(history) {
 					console.log("<?php echo xl('Dental history loaded:'); ?>", history);
-					history.forEach(function(item) {
-						if (item.symbol && item.symbol.endsWith('.svg')) { // Validar que sea un SVG
-							overlaySymbol(item.tooth_id, item.symbol);
-						} else {
-							console.warn("<?php echo xl('Invalid symbol skipped:'); ?> " + item.symbol);
-						}
-					});
+					if (history.length === 0) {
+						console.warn("<?php echo xl('No history found for the given range or encounter'); ?>");
+					} else {
+						historyLayer.clear();
+						history.forEach(function(item) {
+							if (item.tooth_id && item.symbol) {
+								overlaySymbol(item.tooth_id, item.symbol);
+							} else {
+								console.warn("<?php echo xl('Invalid history item:'); ?> ", item);
+							}
+						});
+					}
 				},
 				error: function(xhr, status, error) {
 					console.error("<?php echo xl('Error loading dental history:'); ?> " + status + " - " + error);
@@ -443,7 +448,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			var code = selectedOption.data('code');
 
 			if (!toothId || !interventionType || !optionId) {
-				alert(xl('Please fill all required fields')); // Dental USA English
+				alert(xl('Please fill all required fields'));
 				return;
 			}
 
@@ -465,18 +470,17 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				success: function(response) {
 					if (response.success) {
 						console.log("<?php echo xl('Data saved with ID:'); ?> " + response.id);
-						overlaySymbol(toothId, symbol);
+						overlaySymbol(toothId, symbol); // Llama con el símbolo correcto
 						$('#editModal').modal('hide');
 						loadHistory();
 					} else {
 						console.error("<?php echo xl('Error in response:'); ?> ", response);
-						alert(xl('Failed to save dental intervention') + ': ' + response.error); // Dental USA English
+						alert(xl('Failed to save dental intervention') + ': ' + response.error);
 					}
 				},
 				error: function(xhr, status, error) {
 					console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
-					console.log("<?php echo xl('Server response:'); ?> ", xhr.responseText);
-					alert(xl('Error saving dental intervention') + ': ' + xhr.responseText); // Dental USA English
+					alert(xl('Error saving dental intervention') + ': ' + xhr.responseText);
 				}
 			});
 		});
@@ -489,37 +493,31 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				return;
 			}
 
-			// Obtener la caja delimitadora
 			var bbox = element.bbox();
 			var centerX = bbox.cx;
 			var centerY = bbox.cy;
+
+			var elementTransform = element.transform();
+			centerX += elementTransform.x || 0;
+			centerY += elementTransform.y || 0;
+
+			var layerTransform = historyLayer.transform();
+			centerX += layerTransform.x || 0;
+			centerY += layerTransform.y || 0;
+
 			var symbolWidth = 30;
 			var symbolHeight = 30;
 
-			// Construir la URL con get_symbol.php
 			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
-			console.log("<?php echo xl('Loading symbol from URL:'); ?> " + svgPath); // Depuración
+			console.log("<?php echo xl('Loading symbol from URL:'); ?> " + svgPath);
 
-			// Superponer el símbolo
 			var image = historyLayer.image(svgPath)
 				.size(symbolWidth, symbolHeight)
 				.move(centerX - symbolWidth / 2, centerY - symbolHeight / 2)
 				.addClass('odontogram-overlay');
 
-			// Verificar si la imagen se carga
-			image.loaded(function(loader) {
-				console.log("<?php echo xl('Symbol loaded successfully:'); ?> " + symbolFile + ", width=" + loader.width + ", height=" + loader.height);
-			}).error(function() {
-				console.error("<?php echo xl('Failed to load symbol:'); ?> " + svgPath);
-			});
-
 			console.log("<?php echo xl('Symbol overlaid on'); ?> " + toothId + " <?php echo xl('at coordinates:'); ?> x=" + (centerX - symbolWidth / 2) + ", y=" + (centerY - symbolHeight / 2));
 		}
-
-		$('#viewHistory').click(function() {
-			$('#toothModal').modal('hide');
-			alert("<?php echo xl('Open dental history (next step)'); ?>"); // Dental USA English
-		});
 
 		// Save the entire form
 		$('#saveForm').on('click', function() {
