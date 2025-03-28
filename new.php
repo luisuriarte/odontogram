@@ -306,8 +306,8 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		});
 
 		function loadHistory() {
-			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>'; // Usa input o valor predeterminado (2015-03-13)
-			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';       // Usa input o valor predeterminado (2025-03-13)
+			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
+			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';
 			console.log("<?php echo xl('Loading dental history from'); ?> " + historyStartDate + " <?php echo xl('to'); ?> " + historyEndDate + " <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_history.php',
@@ -321,7 +321,11 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				success: function(history) {
 					console.log("<?php echo xl('Dental history loaded:'); ?>", history);
 					history.forEach(function(item) {
-						overlaySymbol(item.tooth_id, item.symbol);
+						if (item.symbol && item.symbol.endsWith('.svg')) { // Validar que sea un SVG
+							overlaySymbol(item.tooth_id, item.symbol);
+						} else {
+							console.warn("<?php echo xl('Invalid symbol skipped:'); ?> " + item.symbol);
+						}
 					});
 				},
 				error: function(xhr, status, error) {
@@ -485,17 +489,29 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				return;
 			}
 
+			// Obtener la caja delimitadora
 			var bbox = element.bbox();
 			var centerX = bbox.cx;
 			var centerY = bbox.cy;
 			var symbolWidth = 30;
 			var symbolHeight = 30;
 
-			var svgPath = '/interface/forms/odontogram/assets/svg/' + symbolFile; // Ruta directa
+			// Construir la URL con get_symbol.php
+			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
+			console.log("<?php echo xl('Loading symbol from URL:'); ?> " + svgPath); // Depuración
+
+			// Superponer el símbolo
 			var image = historyLayer.image(svgPath)
 				.size(symbolWidth, symbolHeight)
 				.move(centerX - symbolWidth / 2, centerY - symbolHeight / 2)
 				.addClass('odontogram-overlay');
+
+			// Verificar si la imagen se carga
+			image.loaded(function(loader) {
+				console.log("<?php echo xl('Symbol loaded successfully:'); ?> " + symbolFile + ", width=" + loader.width + ", height=" + loader.height);
+			}).error(function() {
+				console.error("<?php echo xl('Failed to load symbol:'); ?> " + svgPath);
+			});
 
 			console.log("<?php echo xl('Symbol overlaid on'); ?> " + toothId + " <?php echo xl('at coordinates:'); ?> x=" + (centerX - symbolWidth / 2) + ", y=" + (centerY - symbolHeight / 2));
 		}
