@@ -479,25 +479,19 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		// Overlay symbol with central symmetry
 		function overlaySymbol(toothId, symbolFile) {
-			var element = SVG('#' + toothId); // Get SVG element by ID
+			var element = SVG('#' + toothId);
 			if (!element) {
 				console.error("<?php echo xl('Tooth element not found:'); ?> " + toothId);
 				return;
 			}
 
-			// Get bounding box for central positioning
 			var bbox = element.bbox();
-			var centerX = bbox.cx; // Center X
-			var centerY = bbox.cy; // Center Y
-
-			// Symbol size (adjust based on your SVGs)
+			var centerX = bbox.cx;
+			var centerY = bbox.cy;
 			var symbolWidth = 30;
 			var symbolHeight = 30;
 
-			// Construct symbol path
-			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
-
-			// Add symbol to history layer with central symmetry
+			var svgPath = '/interface/forms/odontogram/assets/svg/' + symbolFile; // Ruta directa
 			var image = historyLayer.image(svgPath)
 				.size(symbolWidth, symbolHeight)
 				.move(centerX - symbolWidth / 2, centerY - symbolHeight / 2)

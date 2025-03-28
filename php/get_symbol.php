@@ -1,26 +1,16 @@
 <?php
-require_once("../../../globals.php"); // Carga la autenticación y configuración de OpenEMR
+require_once '../../../globals.php';
 
-// Obtener el nombre del archivo SVG desde la solicitud GET
 $symbol = $_GET['symbol'] ?? '';
+$symbolPath = dirname(__FILE__) . "/../assets/svg/$symbol";
 
-// Validar entrada para evitar accesos no deseados
-if (empty($symbol) || !preg_match('/^[a-zA-Z0-9_-]+\.svg$/', $symbol)) {
-    http_response_code(400);
-    exit('Invalid symbol name');
-}
-
-// Ruta al archivo SVG
-$svgPath = __DIR__ . "../assets/symbols/" . $symbol;
-
-// Verificar que el archivo exista
-if (file_exists($svgPath) && is_file($svgPath)) {
-    // Establecer encabezados para servir SVG
+error_log("Attempting to load: $symbolPath"); // Añade esto para depurar
+if (file_exists($symbolPath)) {
     header('Content-Type: image/svg+xml');
-    header('Content-Length: ' . filesize($svgPath));
-    readfile($svgPath);
-    exit;
+    readfile($symbolPath);
 } else {
-    http_response_code(404);
-    exit('Symbol not found');
+    header('HTTP/1.0 404 Not Found');
+    error_log("File not found: $symbolPath"); // Log del error
+    echo "Symbol not found: $symbol";
 }
+?>
