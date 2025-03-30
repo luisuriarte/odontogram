@@ -232,6 +232,20 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		loadHistory();
 
+		$('#start_date').change(function() {
+			var startDate = $(this).val();
+			$('#end_date').val(startDate);
+			loadHistory();
+		});
+
+		$('#end_date').change(function() {
+			loadHistory();
+		});
+
+		$('#update_history').click(function() {
+			loadHistory();
+		});
+
 		// Click event on SVG elements
 		$('#odontogram-svg').on('click', 'rect, path, polygon', function(e) {
 			e.preventDefault();
@@ -254,18 +268,20 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 					if (data.error) {
 						console.error("<?php echo xl('Error in response:'); ?> " + data.error);
 					} else {
-						// Mostrar nombre, sistema y número, con símbolo en rojo para Palmer
+						console.log("Data received:", data);
 						var numberDisplay = data.number;
 						if (data.system === 'PALMER' && data.palmer_symbol) {
-							numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
+							if (data.palmer.indexOf(data.palmer_symbol) === 0) {
+								numberDisplay = '<span class="palmer-symbol">' + data.palmer_symbol + '</span>' + data.number;
+							} else {
+								numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
+							}
+							console.log("Palmer display:", numberDisplay);
 						}
 						$('#toothName').html(data.name + ' - ' + data.system + ' ' + numberDisplay);
 						$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
 						$('#toothModal').modal('show');
 					}
-				},
-				error: function(xhr, status, error) {
-					console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
 				}
 			});
 		});
@@ -317,7 +333,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		function loadHistory() {
 			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
 			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';
-			var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>'; // Obtener encounter del servidor
+			var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>';
 			console.log("<?php echo xl('Loading dental history from'); ?> " + historyStartDate + " <?php echo xl('to'); ?> " + historyEndDate + " <?php echo xl('with filters:'); ?>", ['Diagnosis', 'Issue', 'Procedure']);
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_history.php',
@@ -325,7 +341,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				data: { 
 					start: historyStartDate, 
 					end: historyEndDate, 
-					encounter: encounter, // Pasar encounter explícitamente
+					encounter: encounter,
 					filters: ['Diagnosis', 'Issue', 'Procedure'] 
 				},
 				dataType: 'json',
@@ -346,24 +362,9 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				},
 				error: function(xhr, status, error) {
 					console.error("<?php echo xl('Error loading dental history:'); ?> " + status + " - " + error);
-					console.log("<?php echo xl('Server response:'); ?> ", xhr.responseText);
 				}
 			});
 		}
-
-		$('#start_date').change(function() {
-			var startDate = $(this).val();
-			$('#end_date').val(startDate);
-			loadHistory();
-		});
-
-		$('#end_date').change(function() {
-			loadHistory();
-		});
-
-		$('#update_history').click(function() {
-			loadHistory();
-		});
 
 		// Load options for intervention type
 		function loadOptions(type) {
@@ -497,37 +498,66 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		});
 
 		// Overlay symbol with central symmetry
-		function overlaySymbol(toothId, symbolFile) {
-			var element = SVG('#' + toothId);
-			if (!element) {
-				console.error("<?php echo xl('Tooth element not found:'); ?> " + toothId);
-				return;
+		function overlaySymbol(toothId, symbolUrl) {
+			$.ajax({
+				url: '/interface/forms/odontogram/php/get_tooth_details.php',
+				type: 'POST',
+				data: { tooth_id: toothId, user_id: userId },
+				dataType: 'json',
+				success: function(data) {
+					if (data.error) {
+						console.error("Error getting tooth details:", data.error);
+						return;
+					}
+
+					var symbolWidth = 20; // Ajusta según tus SVGs
+					var symbolHeight = 20;
+
+					var posX, posY;
+					if (data.svg_type === 'rect') {
+						posX = data.x + (data.width - symbolWidth) / 2;
+						posY = data.y + (data.height - symbolHeight) / 2;
+					} else if (data.svg_type === 'path') {
+						var coords = parsePathD(data.d);
+						var centroid = calculateCentroid(coords);
+						posX = centroid.x - symbolWidth / 2;
+						posY = centroid.y - symbolHeight / 2;
+					} else {
+						console.error("Unknown svg_type:", data.svg_type);
+						return;
+					}
+
+					var symbol = SVG(symbolUrl).addTo(historyLayer); // Añadir al historyLayer
+					symbol.size(symbolWidth, symbolHeight).move(posX, posY);
+					console.log("Symbol placed at:", {toothId: toothId, x: posX, y: posY});
+				}
+			});
+		}
+
+		// Parsear 'd' de un path (simplificado)
+		function parsePathD(d) {
+			var coords = [];
+			var matches = d.match(/[ML]\s*([\d.]+),([\d.]+)/g);
+			if (matches) {
+				matches.forEach(function(match) {
+					var parts = match.match(/[\d.]+/g);
+					coords.push({x: parseFloat(parts[0]), y: parseFloat(parts[1])});
+				});
 			}
+			return coords;
+		}
 
-			var bbox = element.bbox();
-			var centerX = bbox.cx;
-			var centerY = bbox.cy;
-
-			var elementTransform = element.transform();
-			centerX += elementTransform.x || 0;
-			centerY += elementTransform.y || 0;
-
-			var layerTransform = historyLayer.transform();
-			centerX += layerTransform.x || 0;
-			centerY += layerTransform.y || 0;
-
-			var symbolWidth = 30;
-			var symbolHeight = 30;
-
-			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
-			console.log("<?php echo xl('Loading symbol from URL:'); ?> " + svgPath);
-
-			var image = historyLayer.image(svgPath)
-				.size(symbolWidth, symbolHeight)
-				.move(centerX - symbolWidth / 2, centerY - symbolHeight / 2)
-				.addClass('odontogram-overlay');
-
-			console.log("<?php echo xl('Symbol overlaid on'); ?> " + toothId + " <?php echo xl('at coordinates:'); ?> x=" + (centerX - symbolWidth / 2) + ", y=" + (centerY - symbolHeight / 2));
+		// Calcular centroide de un path
+		function calculateCentroid(coords) {
+			var xSum = 0, ySum = 0;
+			coords.forEach(function(coord) {
+				xSum += coord.x;
+				ySum += coord.y;
+			});
+			return {
+				x: xSum / coords.length,
+				y: ySum / coords.length
+			};
 		}
 
 		// Save the entire form

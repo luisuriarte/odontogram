@@ -18,18 +18,15 @@ if (empty($user_id)) {
     exit;
 }
 
-// Obtener la preferencia del usuario desde la tabla users
 $system_preference = sqlQuery("SELECT odontogram_preference FROM users WHERE id = ?", [$user_id])['odontogram_preference'] ?? 'FDI';
-
-// Obtener detalles del diente
-$result = sqlQuery("SELECT name, universal, fdi, palmer, part, arc, side FROM form_odontogram WHERE tooth_id = ?", [$tooth_id]);
+$result = sqlQuery("SELECT name, universal, fdi, palmer, part, arc, side, svg_type, x, y, width, height, d 
+                    FROM form_odontogram WHERE tooth_id = ?", [$tooth_id]);
 
 if ($result) {
-    // Determinar el número y sistema según la preferencia
     $number = '';
     $system = $system_preference;
-    $palmer_symbol = ''; // Para el símbolo en Palmer
-    $palmer_number = ''; // Para el número en Palmer
+    $palmer_symbol = '';
+    $palmer_number = '';
 
     switch (strtolower($system_preference)) {
         case 'universal':
@@ -39,25 +36,29 @@ if ($result) {
             $number = $result['fdi'];
             break;
         case 'palmer':
-            // Separar número y símbolo en Palmer (ej. "8⏋" -> "8" y "⏋")
             $palmer_value = $result['palmer'];
-            if (preg_match('/^([0-8])(.*)$/', $palmer_value, $matches)) {
-                $palmer_number = $matches[1]; // Número (0-8)
-                $palmer_symbol = $matches[2]; // Símbolo (⏋ o similar)
-            } elseif (preg_match('/^([A-E])(.*)$/', $palmer_value, $matches)) {
-                $palmer_number = $matches[1]; // Letra (A-E para infantiles)
-                $palmer_symbol = $matches[2]; // Símbolo
-            } else {
-                $palmer_number = $palmer_value; // Si no hay símbolo, todo es número
+            $symbols = ['⏋', '⎿', '⏌', '┌'];
+            foreach ($symbols as $symbol) {
+                if (strpos($palmer_value, $symbol) === 0) {
+                    $palmer_symbol = $symbol;
+                    $palmer_number = substr($palmer_value, strlen($symbol));
+                    break;
+                } elseif (strrpos($palmer_value, $symbol) === strlen($palmer_value) - strlen($symbol)) {
+                    $palmer_symbol = $symbol;
+                    $palmer_number = substr($palmer_value, 0, -strlen($symbol));
+                    break;
+                }
             }
-            $number = $palmer_number; // Para compatibilidad con el frontend
+            if (empty($palmer_symbol)) {
+                $palmer_number = $palmer_value;
+            }
+            $number = $palmer_number;
             break;
         default:
             $system = 'FDI';
             $number = $result['fdi'];
     }
 
-    // Construir respuesta
     $response = [
         'name' => $result['name'],
         'universal' => $result['universal'],
@@ -68,8 +69,15 @@ if ($result) {
         'side' => $result['side'],
         'system' => strtoupper($system),
         'number' => $number,
-        'palmer_symbol' => $palmer_symbol // Nuevo campo para el símbolo
+        'palmer_symbol' => $palmer_symbol,
+        'svg_type' => $result['svg_type'],
+        'x' => $result['x'],
+        'y' => $result['y'],
+        'width' => $result['width'],
+        'height' => $result['height'],
+        'd' => $result['d']
     ];
+    error_log("Response sent: " . json_encode($response, JSON_UNESCAPED_UNICODE));
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode(['error' => 'Tooth not found', 'tooth_id' => $tooth_id], JSON_UNESCAPED_UNICODE);
