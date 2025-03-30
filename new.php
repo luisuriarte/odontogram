@@ -12,14 +12,14 @@ $encounter = $_SESSION['encounter'] ?? 0;
 $userId = $_SESSION['authUserID'];
 $professionalName = $_SESSION['authUser'] ?? xl('Unknown'); // Logged-in professional's name
 
-$sql = "SELECT odontogram_preferences FROM users WHERE id = ?";
+$sql = "SELECT odontogram_preference FROM users WHERE id = ?";
 $result = sqlQuery($sql, array($userId));
 $defaultSystem = $result['odontogram_preferences'] ?? 'FDI';
 
 if (isset($_POST['system'])) {
     $newSystem = $_POST['system'];
     if (in_array($newSystem, ['FDI', 'Universal', 'Palmer'])) {
-        $sql = "UPDATE users SET odontogram_preferences = ? WHERE id = ?";
+        $sql = "UPDATE users SET odontogram_preference = ? WHERE id = ?";
         sqlStatement($sql, array($newSystem, $userId));
         echo json_encode(['success' => true]);
         exit;
@@ -32,6 +32,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 <html>
 <head>
+	<meta charset="UTF-8"> <!-- Forzar UTF-8 en la página -->
     <title><?php echo xl('Odontogram'); ?></title>
     <link rel="stylesheet" href="/public/assets/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/public/assets/jquery-ui/jquery-ui.min.css">
@@ -83,6 +84,9 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
             width: 100px;
             height: 100px;
             overflow: hidden;
+        }
+		.palmer-symbol {
+            color: red; /* Símbolo en rojo */
         }
     </style>
     <script>
@@ -232,7 +236,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		$('#odontogram-svg').on('click', 'rect, path, polygon', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			var toothId = this.id; // Cambié svgId a toothId para claridad
+			var toothId = this.id;
 			window.lastClickedToothId = toothId;
 			console.log("<?php echo xl('Click event triggered on element with ID:'); ?> " + toothId + " (" + this.tagName + ")");
 
@@ -244,13 +248,18 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_tooth_details.php',
 				type: 'POST',
-				data: { tooth_id: toothId, user_id: userId }, // Cambié svg_id a tooth_id
+				data: { tooth_id: toothId, user_id: userId },
 				dataType: 'json',
 				success: function(data) {
 					if (data.error) {
 						console.error("<?php echo xl('Error in response:'); ?> " + data.error);
 					} else {
-						$('#toothName').text(data.name + ' - ' + data.system + ' ' + data.number);
+						// Mostrar nombre, sistema y número, con símbolo en rojo para Palmer
+						var numberDisplay = data.number;
+						if (data.system === 'PALMER' && data.palmer_symbol) {
+							numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
+						}
+						$('#toothName').html(data.name + ' - ' + data.system + ' ' + numberDisplay);
 						$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
 						$('#toothModal').modal('show');
 					}
