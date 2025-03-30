@@ -46,8 +46,9 @@ if (!$pid || !$encounter) {
     exit;
 }
 
-// Obtener odontogram_id desde form_odontogram usando svg_id
-$odontogram_id = sqlQuery("SELECT id FROM form_odontogram WHERE svg_id = ?", [$tooth_id])['id'] ?? null;
+error_log("save_odontogram.php - PID: $pid, Encounter: $encounter, Date: $date, Tooth ID: $tooth_id");
+
+$odontogram_id = sqlQuery("SELECT id FROM form_odontogram WHERE tooth_id = ?", [$tooth_id])['id'] ?? null;
 
 if (!$odontogram_id) {
     ob_end_clean();
@@ -56,7 +57,6 @@ if (!$odontogram_id) {
     exit;
 }
 
-// Insertar en form_odontogram_history
 $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, option_id, date, symbol, code, description, user, groupname, authorized, activity) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $params = [
@@ -78,8 +78,7 @@ $params = [
 try {
     $history_id = sqlInsert($sql, $params);
     if ($history_id) {
-        // Registrar el formulario en forms (usamos un ID de formulario general si existe)
-        $form_id = sqlInsert("INSERT INTO form_odontogram (svg_id) VALUES (?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)", [$tooth_id]);
+        $form_id = sqlInsert("INSERT INTO form_odontogram (tooth_id) VALUES (?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)", [$tooth_id]);
         addForm($encounter, "Odontogram", $form_id, "odontogram", $pid, $user, $groupname, $authorized);
         ob_end_clean();
         header('Content-Type: application/json');

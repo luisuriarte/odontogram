@@ -1,32 +1,29 @@
 <?php
-require_once("../../../globals.php");
+require_once '../../../globals.php';
+require_once "$srcdir/sql.inc.php";
 
-if (isset($_POST['svg_id']) && isset($_POST['user_id'])) {
-    $svgId = $_POST['svg_id'];
-    $userId = $_POST['user_id'];
+header('Content-Type: application/json');
 
-    // Obtener preferencia de numeración
-    $sql = "SELECT odontogram_preferences FROM users WHERE id = ?";
-    $userResult = sqlQuery($sql, array($userId));
-    $system = $userResult['odontogram_preferences'] ?? 'FDI';
+$tooth_id = $_POST['tooth_id'] ?? '';
+error_log("get_tooth_details.php - Received POST: " . json_encode($_POST));
+error_log("get_tooth_details.php - Tooth ID: " . $tooth_id);
 
-    // Obtener detalles del diente
-    $sql = "SELECT name, universal, fdi, palmer, part, arc, side FROM form_odontogram WHERE svg_id = ?";
-    $result = sqlQuery($sql, array($svgId));
-
-    if ($result) {
-        $number = ($system === 'Universal') ? $result['universal'] : (($system === 'FDI') ? $result['fdi'] : $result['palmer']);
-        $response = [
-            'name' => $result['name'],
-            'system' => $system,
-            'number' => $number,
-            'part' => $result['part'],
-            'arc' => $result['arc'],
-            'side' => $result['side']
-        ];
-        echo json_encode($response);
-    } else {
-        echo json_encode(['error' => 'Diente no encontrado']);
-    }
+if (empty($tooth_id)) {
+    echo json_encode(['error' => 'Missing tooth_id']);
+    exit;
 }
+
+try {
+    $result = sqlQuery("SELECT name, universal, fdi, palmer, part, arc, side FROM form_odontogram WHERE tooth_id = ?", [$tooth_id]);
+    if ($result) {
+        echo json_encode($result);
+    } else {
+        echo json_encode(['error' => 'Tooth not found', 'tooth_id' => $tooth_id]);
+    }
+} catch (Exception $e) {
+    error_log("get_tooth_details.php - SQL Error: " . $e->getMessage());
+    echo json_encode(['error' => 'Database query failed', 'details' => $e->getMessage()]);
+}
+
+exit;
 ?>

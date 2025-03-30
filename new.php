@@ -232,11 +232,11 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		$('#odontogram-svg').on('click', 'rect, path, polygon', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			var svgId = this.id;
-			window.lastClickedToothId = svgId;
-			console.log("<?php echo xl('Click event triggered on element with ID:'); ?> " + svgId + " (" + this.tagName + ")");
+			var toothId = this.id; // Cambié svgId a toothId para claridad
+			window.lastClickedToothId = toothId;
+			console.log("<?php echo xl('Click event triggered on element with ID:'); ?> " + toothId + " (" + this.tagName + ")");
 
-			if (!svgId) {
+			if (!toothId) {
 				console.log("<?php echo xl('Element without ID clicked'); ?>");
 				return;
 			}
@@ -244,16 +244,16 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_tooth_details.php',
 				type: 'POST',
-				data: { svg_id: svgId, user_id: userId },
+				data: { tooth_id: toothId, user_id: userId }, // Cambié svg_id a tooth_id
 				dataType: 'json',
 				success: function(data) {
 					if (data.error) {
 						console.error("<?php echo xl('Error in response:'); ?> " + data.error);
-						return;
+					} else {
+						$('#toothName').text(data.name + ' - ' + data.system + ' ' + data.number);
+						$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
+						$('#toothModal').modal('show');
 					}
-					$('#toothName').text(data.name + ' - ' + data.system + ' ' + data.number);
-					$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
-					$('#toothModal').modal('show');
 				},
 				error: function(xhr, status, error) {
 					console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
@@ -308,14 +308,16 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		function loadHistory() {
 			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
 			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';
-			console.log("<?php echo xl('Loading dental history from'); ?> " + historyStartDate + " <?php echo xl('to'); ?> " + historyEndDate + " <?php echo xl('with filters:'); ?>", ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures']);
+			var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>'; // Obtener encounter del servidor
+			console.log("<?php echo xl('Loading dental history from'); ?> " + historyStartDate + " <?php echo xl('to'); ?> " + historyEndDate + " <?php echo xl('with filters:'); ?>", ['Diagnosis', 'Issue', 'Procedure']);
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_history.php',
 				type: 'POST',
 				data: { 
 					start: historyStartDate, 
 					end: historyEndDate, 
-					filters: ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'] 
+					encounter: encounter, // Pasar encounter explícitamente
+					filters: ['Diagnosis', 'Issue', 'Procedure'] 
 				},
 				dataType: 'json',
 				success: function(history) {
