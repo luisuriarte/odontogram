@@ -224,38 +224,24 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 	</div>
 	<script>
 	$(document).ready(function() {
-		console.log("<?php echo xl('Document ready'); ?>");
+		//console.log("<?php echo xl('Document ready'); ?>");
 
 		var draw = SVG().addTo('#odontogram-svg').size(1048, 704);
 		var historyLayer = draw.group().id('historyLayer');
-		console.log("<?php echo xl('SVG container and history layer created'); ?>");
+		//console.log("<?php echo xl('SVG container and history layer created'); ?>");
 
 		loadHistory();
 
-		$('#start_date').change(function() {
-			var startDate = $(this).val();
-			$('#end_date').val(startDate);
-			loadHistory();
-		});
-
-		$('#end_date').change(function() {
-			loadHistory();
-		});
-
-		$('#update_history').click(function() {
-			loadHistory();
-		});
-
-		// Click event on SVG elements
-		$('#odontogram-svg').on('click', 'rect, path, polygon', function(e) {
+	// Click event on SVG elements
+	$('#odontogram-svg').on('click', 'rect, path, polygon', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
 			var toothId = this.id;
 			window.lastClickedToothId = toothId;
-			console.log("<?php echo xl('Click event triggered on element with ID:'); ?> " + toothId + " (" + this.tagName + ")");
+		//	console.log("<?php echo xl('Click event triggered on element with ID:'); ?> " + toothId + " (" + this.tagName + ")");
 
 			if (!toothId) {
-				console.log("<?php echo xl('Element without ID clicked'); ?>");
+		//		console.log("<?php echo xl('Element without ID clicked'); ?>");
 				return;
 			}
 
@@ -268,7 +254,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 					if (data.error) {
 						console.error("<?php echo xl('Error in response:'); ?> " + data.error);
 					} else {
-						console.log("Data received:", data);
+		//				console.log("Data received:", data);
 						var numberDisplay = data.number;
 						if (data.system === 'PALMER' && data.palmer_symbol) {
 							if (data.palmer.indexOf(data.palmer_symbol) === 0) {
@@ -276,18 +262,21 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 							} else {
 								numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
 							}
-							console.log("Palmer display:", numberDisplay);
+		//					console.log("Palmer display:", numberDisplay);
 						}
 						$('#toothName').html(data.name + ' - ' + data.system + ' ' + numberDisplay);
 						$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
 						$('#toothModal').modal('show');
 					}
+				},
+				error: function(xhr, status, error) {
+					console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
 				}
 			});
 		});
 
-		// Load the base SVG
-		$.get('/interface/forms/odontogram/assets/odontogram.svg', function(svgData) {
+	// Load the base SVG
+	$.get('/interface/forms/odontogram/assets/odontogram.svg', function(svgData) {
 			console.log("<?php echo xl('SVG loaded from server'); ?>");
 			draw.svg(svgData);
 
@@ -330,7 +319,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			console.error("<?php echo xl('Error loading SVG:'); ?> " + textStatus);
 		});
 
-		function loadHistory() {
+			function loadHistory() {
 			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
 			var historyEndDate = $('#end_date').val() || '<?php echo $end; ?>';
 			var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>';
@@ -346,7 +335,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				},
 				dataType: 'json',
 				success: function(history) {
-					console.log("<?php echo xl('Dental history loaded:'); ?>", history);
+		//			console.log("<?php echo xl('Dental history loaded:'); ?>", history);
 					if (history.length === 0) {
 						console.warn("<?php echo xl('No history found for the given range or encounter'); ?>");
 					} else {
@@ -366,9 +355,23 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			});
 		}
 
+		$('#start_date').change(function() {
+			var startDate = $(this).val();
+			$('#end_date').val(startDate);
+			loadHistory();
+		});
+
+		$('#end_date').change(function() {
+			loadHistory();
+		});
+
+		$('#update_history').click(function() {
+			loadHistory();
+		});
+
 		// Load options for intervention type
 		function loadOptions(type) {
-			console.log("<?php echo xl('Loading options for intervention type:'); ?> " + type);
+		//	console.log("<?php echo xl('Loading options for intervention type:'); ?> " + type);
 			$.ajax({
 				url: '/interface/forms/odontogram/php/get_options.php',
 				type: 'POST',
@@ -385,7 +388,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 					options.forEach(function(option) {
 						$select.append(`<option value="${option.option_id}" data-symbol="${option.symbol}" data-code="${option.codes}">${option.title}</option>`);
 					});
-					console.log("<?php echo xl('Options loaded, updating symbol preview'); ?>");
+		//			console.log("<?php echo xl('Options loaded, updating symbol preview'); ?>");
 					updateSymbolPreview();
 				},
 				error: function(xhr, status, error) {
@@ -401,13 +404,13 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			var symbolFile = selectedOption.data('symbol');
 			var code = selectedOption.data('code');
 
-			console.log("<?php echo xl('Updating preview - symbol:'); ?> " + symbolFile + ", <?php echo xl('code:'); ?> " + code);
+		//	console.log("<?php echo xl('Updating preview - symbol:'); ?> " + symbolFile + ", <?php echo xl('code:'); ?> " + code);
 
 			$('#editCode').val(code || '');
 
 			if (symbolFile) {
 				var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
-				console.log("<?php echo xl('Attempting to load symbol SVG from:'); ?> " + svgPath);
+		//		console.log("<?php echo xl('Attempting to load symbol SVG from:'); ?> " + svgPath);
 				$('#symbol-preview').html(`<img src="${svgPath}" alt="${selectedOption.text()} Icon" class="me-2" style="width: 30px; height: 20px;">`);
 			} else {
 				$('#symbol-preview').html(`<p><?php echo xl('No symbol available'); ?></p>`);
@@ -419,27 +422,27 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		// Transition from tooth modal to edit modal
 		$('#editTooth').click(function(e) {
 			e.preventDefault();
-			console.log("<?php echo xl('Click on Edit - Starting modal transition'); ?>");
+		//	console.log("<?php echo xl('Click on Edit - Starting modal transition'); ?>");
 
 			try {
 				var toothName = $('#toothName').text();
 				var toothDetails = $('#toothDetails').text();
 				var svgId = $('#odontogram-svg .selected').attr('id') || window.lastClickedToothId;
 
-				console.log("<?php echo xl('Data retrieved - tooth name:'); ?> " + toothName + ", <?php echo xl('svgId:'); ?> " + svgId);
+		//		console.log("<?php echo xl('Data retrieved - tooth name:'); ?> " + toothName + ", <?php echo xl('svgId:'); ?> " + svgId);
 
 				$('#editToothName').text(toothName);
 				$('#editToothDetails').text(toothDetails);
 				$('#editSvgId').val(svgId);
 
-				console.log("<?php echo xl('Calling loadOptions for diagnosis'); ?>");
+		//		console.log("<?php echo xl('Calling loadOptions for diagnosis'); ?>");
 				loadOptions('diagnosis');
 
 				$('#toothModal').modal('hide');
 				$('#toothModal').on('hidden.bs.modal', function() {
 					$('#editModal').modal('show');
 					$('#editModal').on('shown.bs.modal', function() {
-						console.log("<?php echo xl('Edit modal shown - Focusing intervention type'); ?>");
+		//				console.log("<?php echo xl('Edit modal shown - Focusing intervention type'); ?>");
 						$('#editInterventionType').focus();
 					});
 				});
@@ -450,7 +453,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		// Save intervention
 		$('#saveEdit').click(function() {
-			console.log("<?php echo xl('Saving odontogram data'); ?>");
+		//	console.log("<?php echo xl('Saving odontogram data'); ?>");
 
 			var toothId = $('#editSvgId').val();
 			var interventionType = $('#editInterventionType').val();
@@ -471,7 +474,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				symbol: symbol,
 				code: code
 			};
-			console.log("<?php echo xl('Data to be saved:'); ?> ", data);
+		//	console.log("<?php echo xl('Data to be saved:'); ?> ", data);
 
 			$.ajax({
 				url: '/interface/forms/odontogram/php/save_odontogram.php',
@@ -481,7 +484,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				dataType: 'json',
 				success: function(response) {
 					if (response.success) {
-						console.log("<?php echo xl('Data saved with ID:'); ?> " + response.id);
+		//				console.log("<?php echo xl('Data saved with ID:'); ?> " + response.id);
 						overlaySymbol(toothId, symbol); // Llama con el símbolo correcto
 						$('#editModal').modal('hide');
 						loadHistory();
@@ -497,57 +500,94 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			});
 		});
 
-		// Overlay symbol with central symmetry
-		function overlaySymbol(toothId, symbolUrl) {
-			$.ajax({
-				url: '/interface/forms/odontogram/php/get_tooth_details.php',
-				type: 'POST',
-				data: { tooth_id: toothId, user_id: userId },
-				dataType: 'json',
-				success: function(data) {
-					if (data.error) {
-						console.error("Error getting tooth details:", data.error);
-						return;
-					}
+		function overlaySymbol(toothId, symbolFile) {
+			var element = SVG('#' + toothId);
+			if (!element) {
+				console.error("<?php echo xl('Element not found:'); ?> " + toothId);
+				return;
+			}
 
-					var symbolWidth = 20; // Ajusta según tus SVGs
-					var symbolHeight = 20;
+			var bbox = element.bbox();
+			var symbolWidth = 30;
+			var symbolHeight = 30;
+			var xOffset = bbox.cy > 300 ? 30 : 230; // 30 para inferiores, 230 para superiores
+			var yOffset = bbox.cy > 300 ? -54 : 0;  // -54 para inferiores, 0 para superiores (ajustable)
+			var posX = bbox.cx - symbolWidth / 2 + xOffset;
+			var posY = bbox.cy - symbolHeight / 2 + yOffset;
 
-					var posX, posY;
-					if (data.svg_type === 'rect') {
-						posX = data.x + (data.width - symbolWidth) / 2;
-						posY = data.y + (data.height - symbolHeight) / 2;
-					} else if (data.svg_type === 'path') {
-						var coords = parsePathD(data.d);
-						var centroid = calculateCentroid(coords);
-						posX = centroid.x - symbolWidth / 2;
-						posY = centroid.y - symbolHeight / 2;
-					} else {
-						console.error("Unknown svg_type:", data.svg_type);
-						return;
-					}
+			// Asegurar que el símbolo no salga del lienzo
+			if (posY < 0) posY = 0;
+			if (posX < 0) posX = 0;
 
-					var symbol = SVG(symbolUrl).addTo(historyLayer); // Añadir al historyLayer
-					symbol.size(symbolWidth, symbolHeight).move(posX, posY);
-					console.log("Symbol placed at:", {toothId: toothId, x: posX, y: posY});
-				}
-			});
+			var svgPath = '/interface/forms/odontogram/php/get_symbol.php?symbol=' + encodeURIComponent(symbolFile);
+			var symbol = historyLayer.image(svgPath)
+				.size(symbolWidth, symbolHeight)
+				.move(posX, posY)
+				.addClass('odontogram-overlay');
+
+			console.log("<?php echo xl('Symbol overlaid on'); ?> " + toothId + " <?php echo xl('at coordinates:'); ?> x=" + posX + ", y=" + posY);
+			console.log("BBox details:", {x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height, cx: bbox.cx, cy: bbox.cy});
+			console.log("HistoryLayer transform:", historyLayer.transform());
 		}
 
-		// Parsear 'd' de un path (simplificado)
 		function parsePathD(d) {
 			var coords = [];
-			var matches = d.match(/[ML]\s*([\d.]+),([\d.]+)/g);
-			if (matches) {
-				matches.forEach(function(match) {
-					var parts = match.match(/[\d.]+/g);
-					coords.push({x: parseFloat(parts[0]), y: parseFloat(parts[1])});
-				});
-			}
+			var currentX = 0, currentY = 0; // Posición actual
+			var startX = 0, startY = 0;    // Posición inicial para cerrar con z
+			var tokens = d.match(/[mlhMLH]\s*[-\d.,\s]+|[zZ]/g) || [];
+
+			tokens.forEach(function(token) {
+				var command = token[0];
+				var values = (token.slice(1).match(/[-\d.]+/g) || []).map(parseFloat);
+
+				switch (command) {
+					case 'M': // Absoluto: mover a
+						currentX = values[0];
+						currentY = values[1];
+						startX = currentX;
+						startY = currentY;
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'm': // Relativo: mover a
+						currentX += values[0];
+						currentY += values[1];
+						startX = currentX;
+						startY = currentY;
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'L': // Absoluto: línea a
+						currentX = values[0];
+						currentY = values[1];
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'l': // Relativo: línea a
+						currentX += values[0];
+						currentY += values[1];
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'H': // Absoluto: horizontal
+						currentX = values[0];
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'h': // Relativo: horizontal
+						currentX += values[0];
+						coords.push({x: currentX, y: currentY});
+						break;
+					case 'Z': // Cerrar path
+					case 'z':
+						if (coords.length > 0 && (currentX !== startX || currentY !== startY)) {
+							currentX = startX;
+							currentY = startY;
+							coords.push({x: currentX, y: currentY});
+						}
+						break;
+				}
+			});
+
+		//	console.log("Parsed coordinates for d='" + d + "':", coords);
 			return coords;
 		}
 
-		// Calcular centroide de un path
 		function calculateCentroid(coords) {
 			var xSum = 0, ySum = 0;
 			coords.forEach(function(coord) {
@@ -562,7 +602,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		// Save the entire form
 		$('#saveForm').on('click', function() {
-			console.log("<?php echo xl('Saving the odontogram form'); ?>");
+		//	console.log("<?php echo xl('Saving the odontogram form'); ?>");
 
 			$.ajax({
 				url: '/interface/forms/odontogram/save.php',
@@ -574,7 +614,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				dataType: 'json',
 				success: function(response) {
 					if (response.success) {
-						console.log("<?php echo xl('Odontogram saved successfully, ID:'); ?> " + response.form_id);
+		//				console.log("<?php echo xl('Odontogram saved successfully, ID:'); ?> " + response.form_id);
 						top.restoreSession();
 						window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
 					} else {
@@ -584,7 +624,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				},
 				error: function(xhr, status, error) {
 					console.error("<?php echo xl('AJAX Error saving odontogram:'); ?> " + status + " - " + error);
-					console.log("<?php echo xl('Server response:'); ?> ", xhr.responseText);
+		//			console.log("<?php echo xl('Server response:'); ?> ", xhr.responseText);
 					alert(xl('Error saving odontogram') + ': ' + xhr.responseText); // Dental USA English
 				}
 			});
@@ -592,7 +632,7 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 		// Cancel the form
 		$('#cancelForm').on('click', function() {
-			console.log("<?php echo xl('Canceling the odontogram form'); ?>");
+		//	console.log("<?php echo xl('Canceling the odontogram form'); ?>");
 			top.restoreSession();
 			window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
 		});

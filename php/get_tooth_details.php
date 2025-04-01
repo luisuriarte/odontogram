@@ -59,6 +59,21 @@ if ($result) {
             $number = $result['fdi'];
     }
 
+    // Validar coordenadas
+    $svg_type = $result['svg_type'] ?? '';
+    $x = floatval($result['x'] ?? 0);
+    $y = floatval($result['y'] ?? 0);
+    $width = floatval($result['width'] ?? 0);
+    $height = floatval($result['height'] ?? 0);
+    $d = $result['d'] ?? '';
+
+    if ($svg_type === 'rect' && ($width <= 0 || $height <= 0)) {
+        error_log("Invalid rect dimensions for $tooth_id: width=$width, height=$height");
+    }
+    if ($svg_type === 'path' && empty($d)) {
+        error_log("Missing d for path $tooth_id");
+    }
+
     $response = [
         'name' => $result['name'],
         'universal' => $result['universal'],
@@ -70,12 +85,12 @@ if ($result) {
         'system' => strtoupper($system),
         'number' => $number,
         'palmer_symbol' => $palmer_symbol,
-        'svg_type' => $result['svg_type'],
-        'x' => $result['x'],
-        'y' => $result['y'],
-        'width' => $result['width'],
-        'height' => $result['height'],
-        'd' => $result['d']
+        'svg_type' => $svg_type,
+        'x' => $x,
+        'y' => $y,
+        'width' => $width,
+        'height' => $height,
+        'd' => $d
     ];
     error_log("Response sent: " . json_encode($response, JSON_UNESCAPED_UNICODE));
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
