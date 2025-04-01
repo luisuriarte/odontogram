@@ -1,5 +1,4 @@
 -- openemr.form_odontogram definition
-
 CREATE TABLE `form_odontogram` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `universal` varchar(10) DEFAULT NULL,
@@ -54,7 +53,7 @@ INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, op
 INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('odonto_diagnosis', 'moderate_caries', 'Moderate Caries', 2, 0, 0.0, '', 'moderate_caries.svg', 'ICD10:K0261', 0, 0, 1, '', 1, '2025-03-09 15:23:13.000', '2025-03-09 15:23:13.000');
 INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('odonto_diagnosis', 'severe_caries', 'Severe Caries', 3, 0, 0.0, '', 'severe_caries.svg', 'ICD10:K08431', 0, 0, 1, '', 1, '2025-03-09 15:23:14.000', '2025-03-09 15:23:14.000');
 
-// LLenado de form_odontogram 
+-- LLenado de form_odontogram 
 INSERT INTO openemr.form_odontogram (id,universal,fdi,palmer,dentition_type,name,part,arc,side,tooth_id,d,width,height,x,y,sodipodi,svg_type) VALUES
 	 (1,'32','48','8⏋','Adult','Third Molar','Occlusal','Mandibular','Right','Occlusal_AdultThirdMolarMandibularRight',NULL,25.713,25.7125,15.9828,571.2,NULL,'rect'),
 	 (2,'32','48','8⏋','Adult','Third Molar','Buccal','Mandibular','Right','Buccal_AdultThirdMolarMandibularRight','m -1.5382416,554.50174 60.6143476,0.0387 -17.450172,16.50372 H 16.099911 Z',NULL,NULL,NULL,NULL,'nodetypes="ccccc"','path'),
