@@ -14,7 +14,7 @@ $professionalName = $_SESSION['authUser'] ?? xl('Unknown'); // Logged-in profess
 
 $sql = "SELECT odontogram_preference FROM users WHERE id = ?";
 $result = sqlQuery($sql, array($userId));
-$defaultSystem = $result['odontogram_preferences'] ?? 'FDI';
+$defaultSystem = $result['odontogram_preference'] ?? 'FDI';
 
 if (isset($_POST['system'])) {
     $newSystem = $_POST['system'];
