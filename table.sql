@@ -36,14 +36,16 @@ CREATE TABLE `form_odontogram_history` (
   `intervention_type` enum('Diagnosis','Issue','Procedure') DEFAULT NULL,
   `list_id` varchar(100) DEFAULT NULL,
   `option_id` varchar(100) DEFAULT NULL,
-  `symbol` varchar(100) DEFAULT NULL,
   `code` varchar(100) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,
   `notes` text DEFAULT NULL,
+  `svg_style` varchar(100) DEFAULT NULL,
+  `draw_d` text DEFAULT NULL,
+  `draw_style` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `odontogram_id` (`odontogram_id`),
   KEY `list_option_idx` (`list_id`,`option_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 ALTER TABLE users
 ADD COLUMN odontogram_preference ENUM('Universal','FDI','Palmer') DEFAULT NULL;
