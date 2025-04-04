@@ -40,7 +40,8 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
     <script src="/public/assets/jquery-ui/jquery-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.0/svg.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/js-draw@1.29.0/dist/bundle.js"></script>
+	<script src="/interface/forms/odontogram/js/bundle.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/js-draw@1.29.0/dist/js-draw.umd.js"></script> -->
     <style>
         #odontogram-container { max-width: 100%; overflow: auto; }
         #odontogram-svg { width: 1048px; height: 704px; border: 1px solid #ccc; }
@@ -89,19 +90,56 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		.palmer-symbol {
             color: red; /* Símbolo en rojo */
         }
-		#jsdraw-toolbar {
-			position: absolute;
-			top: 10px;
-			left: 10px;
-			background: #f0f0f0;
-			padding: 5px;
-			border: 1px solid #ccc;
-			display: none; /* Oculta por defecto */
-		}
-
-		#jsdraw-toolbar.active {
-			display: block; /* Visible cuando se activa */
-		}
+        .drawing-container {
+            position: relative;
+            width: 1048px;
+            height: 704px;
+        }
+        #jsdraw-toolbar {
+            position: absolute;
+            top: 10px;
+            left: 1060px;
+            background-color: #f5f5f5 !important; /* Fondo sólido */
+            padding: 10px 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+        .tool-button {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .tool-button:hover {
+            background-color: #e0e0e0;
+        }
+        .tool-button.active {
+            background-color: #d0d0ff;
+        }
+        #drawing-layer {
+            width: 1048px !important;
+            height: 704px !important;
+            background: transparent !important;
+        }
+        #drawing-layer canvas {
+            width: 1048px !important;
+            height: 704px !important;
+            background: transparent !important; /* Forzar transparencia del canvas */
+        }
+        .js-draw-toolbar {
+            position: absolute !important;
+            top: 10px !important;
+            left: 1060px !important;
+            background-color: #f5f5f5 !important; /* Fondo sólido */
+            border: 1px solid #ddd !important;
+            z-index: 10 !important;
+        }
     </style>
     <script>
         var defaultSystem = '<?php echo $defaultSystem; ?>';
@@ -146,18 +184,6 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
                 <span class="slider"></span>
             </label>
             <span class="filter-label"><?php echo xl('Procedures'); ?></span>
-        </div>
-
-		<div style="position: relative;">
-			<div id="odontogram-svg" style="position: absolute; top: 0; left: 0; z-index: 1;"></div>
-			<div id="drawing-layer" style="position: absolute; top: 0; left: 0; width: 1048px; height: 704px; z-index: 2; pointer-events: none; background: transparent;"></div>
-		</div>
-
-        <div id="tooth_info" class="panel panel-default">
-            <div class="panel-heading"><?php echo xl('Tooth Details'); ?></div>
-            <div class="panel-body">
-                <p><?php echo xl('Select a numbering system or click on a tooth.'); ?></p>
-            </div>
         </div>
 
 		<!-- Modal de detalles del diente -->
@@ -227,326 +253,336 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 			</div>
 		</div>
     </div>
-	<div class="form-footer mt-3">
-		<button type="button" class="btn btn-primary" id="saveForm"><?php echo xl('Save'); ?></button>
-		<button type="button" class="btn btn-secondary" id="cancelForm"><?php echo xl('Cancel'); ?></button>
-	</div>
-	<script>
-	$(document).ready(function() {
-		var draw = SVG().addTo('#odontogram-svg').size(1048, 704);
-		var historyLayer = draw.group().id('historyLayer');
-		var pendingChanges = {};
-		var editor;
+    <!-- Contenedores para odontograma y lienzo -->
+    <div class="drawing-container" style="position: relative; width: 1048px; height: 704px;">
+        <div id="odontogram-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
+        <div id="drawing-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;"></div>
+        <div id="jsdraw-toolbar" style="display: none;"></div>
+    </div>
+</div>
 
-		var interventionTypeToListId = {
-			'Diagnosis': 'odonto_diagnosis',
-			'Issue': 'odonto_issue',
-			'Procedure': 'odonto_procedures'
-		};
+<script>
+$(document).ready(function() {
+    var draw = SVG().addTo('#odontogram-svg').size(1048, 704);
+    var historyLayer = draw.group().id('historyLayer');
+    var pendingChanges = {};
+    var editor = null;
 
-		loadHistory();
+    var interventionTypeToListId = {
+        'Diagnosis': 'odonto_diagnosis',
+        'Issue': 'odonto_issue',
+        'Procedure': 'odonto_procedures'
+    };
 
-		$.get('/interface/forms/odontogram/assets/odontogram.svg', function(svgData) {
-			draw.svg(svgData);
-			var numbersLayer = draw.findOne('#Numbers');
-			if (numbersLayer) {
-				var fdi = numbersLayer.findOne('#FDI');
-				var universal = numbersLayer.findOne('#Universal');
-				var palmer = numbersLayer.findOne('#Palmer');
+    // Chequeo inicial para confirmar que jsdraw está disponible
+    if (typeof jsdraw === 'undefined') {
+        console.error("jsdraw is not defined. Check if /interface/forms/odontogram/assets/js-draw-bundle.js loaded correctly.");
+    } else {
+        console.log("jsdraw loaded successfully:", jsdraw);
+    }
 
-				function showNumberingSystem(system) {
-					if (fdi) fdi.hide();
-					if (universal) universal.hide();
-					if (palmer) palmer.hide();
-					var selectedGroup = numbersLayer.findOne('#' + system);
-					if (selectedGroup) selectedGroup.show();
-				}
+    loadHistory();
 
-				showNumberingSystem(defaultSystem);
+    $.get('/interface/forms/odontogram/assets/odontogram.svg', function(svgData) {
+        draw.svg(svgData);
+        var numbersLayer = draw.findOne('#Numbers');
+        if (numbersLayer) {
+            var fdi = numbersLayer.findOne('#FDI');
+            var universal = numbersLayer.findOne('#Universal');
+            var palmer = numbersLayer.findOne('#Palmer');
 
-				$('#numbering_system').change(function() {
-					var system = $(this).val();
-					showNumberingSystem(system);
-					$.ajax({
-						url: '/interface/forms/odontogram/new.php',
-						type: 'POST',
-						data: { system: system },
-						success: function() {},
-						error: function(xhr, status, error) {
-							console.error("<?php echo xl('Error saving system:'); ?> " + error);
-						}
-					});
-				}).val(defaultSystem);
-			}
+            function showNumberingSystem(system) {
+                if (fdi) fdi.hide();
+                if (universal) universal.hide();
+                if (palmer) palmer.hide();
+                var selectedGroup = numbersLayer.findOne('#' + system);
+                if (selectedGroup) selectedGroup.show();
+            }
 
-			if (typeof jsdraw !== 'undefined') {
-				try {
-					setTimeout(function() {
-						editor = new jsdraw.Editor(document.getElementById('drawing-layer'), {
-							enableTools: ['pen'],
-							defaultStrokeColor: '#000000',
-							defaultStrokeWidth: 2
-						});
-						$('#jsdraw-toolbar').hide();
-					}, 100);
-				} catch (e) {
-					console.error("Error initializing js-draw:", e);
-				}
-			} else {
-				console.error("jsdraw is not defined. Check if the script loaded correctly.");
-			}
-		}, 'text').fail(function(jqXHR, textStatus) {
-			console.error("<?php echo xl('Error loading SVG:'); ?> " + textStatus);
-		});
+            showNumberingSystem(defaultSystem);
 
-		$('#odontogram-svg').on('click', 'rect, path:not([data-tooth-id]), polygon', function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			var toothId = this.id;
-			window.lastClickedToothId = toothId;
+            $('#numbering_system').change(function() {
+                var system = $(this).val();
+                showNumberingSystem(system);
+                $.ajax({
+                    url: '/interface/forms/odontogram/new.php',
+                    type: 'POST',
+                    data: { system: system },
+                    success: function() {},
+                    error: function(xhr, status, error) {
+                        console.error("<?php echo xl('Error saving system:'); ?> " + error);
+                    }
+                });
+            }).val(defaultSystem);
+        }
+    }, 'text').fail(function(jqXHR, textStatus) {
+        console.error("<?php echo xl('Error loading SVG:'); ?> " + textStatus);
+    });
 
-			if (!toothId) return;
+    $('#odontogram-svg').on('click', 'rect, path:not([data-tooth-id]), polygon', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var toothId = this.id;
+        window.lastClickedToothId = toothId;
 
-			$.ajax({
-				url: '/interface/forms/odontogram/php/get_tooth_details.php',
-				type: 'POST',
-				data: { tooth_id: toothId, user_id: userId },
-				dataType: 'json',
-				success: function(data) {
-					if (data.error) {
-						console.error("<?php echo xl('Error in response:'); ?> " + data.error);
-					} else {
-						var numberDisplay = data.number;
-						if (data.system === 'PALMER' && data.palmer_symbol) {
-							if (data.palmer.indexOf(data.palmer_symbol) === 0) {
-								numberDisplay = '<span class="palmer-symbol">' + data.palmer_symbol + '</span>' + data.number;
-							} else {
-								numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
-							}
-						}
-						$('#toothName').html(data.name + ' - ' + data.system + ' ' + numberDisplay);
-						$('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
-						$('#toothModal').modal('show');
-					}
-				},
-				error: function(xhr, status, error) {
-					console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
-				}
-			});
-		});
+        if (!toothId) return;
 
-		function loadHistory() {
-			var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
-			var historyEndDate = $('#end_date').val() || '<?php echo $endDate; ?>';
-			var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>';
-			var filters = [];
-			if ($('#filter_diagnosis').is(':checked')) filters.push('Diagnosis');
-			if ($('#filter_issue').is(':checked')) filters.push('Issue');
-			if ($('#filter_procedures').is(':checked')) filters.push('Procedure');
+        $.ajax({
+            url: '/interface/forms/odontogram/php/get_tooth_details.php',
+            type: 'POST',
+            data: { tooth_id: toothId, user_id: userId },
+            dataType: 'json',
+            success: function(data) {
+                if (data.error) {
+                    console.error("<?php echo xl('Error in response:'); ?> " + data.error);
+                } else {
+                    var numberDisplay = data.number;
+                    if (data.system === 'PALMER' && data.palmer_symbol) {
+                        if (data.palmer.indexOf(data.palmer_symbol) === 0) {
+                            numberDisplay = '<span class="palmer-symbol">' + data.palmer_symbol + '</span>' + data.number;
+                        } else {
+                            numberDisplay = data.number + '<span class="palmer-symbol">' + data.palmer_symbol + '</span>';
+                        }
+                    }
+                    $('#toothName').html(data.name + ' - ' + data.system + ' ' + numberDisplay);
+                    $('#toothDetails').text(data.part + ', ' + data.arc + ', ' + data.side);
+                    $('#toothModal').modal('show');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("<?php echo xl('AJAX Error:'); ?> " + status + " - " + error);
+            }
+        });
+    });
 
-			$.ajax({
-				url: '/interface/forms/odontogram/php/get_history.php',
-				type: 'POST',
-				data: { 
-					start: historyStartDate, 
-					end: historyEndDate, 
-					encounter: encounter,
-					filters: filters 
-				},
-				dataType: 'json',
-				success: function(history) {
-					historyLayer.clear();
-					history.forEach(function(item) {
-						if (item.tooth_id) {
-							applyStyles(item.tooth_id, item.svg_style, item.draw_d, item.draw_style);
-						}
-					});
-				},
-				error: function(xhr, status, error) {
-					console.error("<?php echo xl('Error loading dental history:'); ?> " + status + " - " + error);
-				}
-			});
-		}
+    function loadHistory() {
+        var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
+        var historyEndDate = $('#end_date').val() || '<?php echo $endDate; ?>';
+        var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>';
+        var filters = [];
+        if ($('#filter_diagnosis').is(':checked')) filters.push('Diagnosis');
+        if ($('#filter_issue').is(':checked')) filters.push('Issue');
+        if ($('#filter_procedures').is(':checked')) filters.push('Procedure');
 
-		function applyStyles(toothId, svgStyle, drawD, drawStyle) {
-			var element = SVG('#' + toothId);
-			if (element && svgStyle) {
-				if (!svgStyle.includes('fill:')) {
-					svgStyle = 'fill: ' + svgStyle;
-				}
-				element.attr('style', svgStyle);
-			}
-			if (drawD && drawStyle) {
-				historyLayer.path(drawD).attr('style', drawStyle).attr('data-tooth-id', toothId);
-			}
-		}
+        $.ajax({
+            url: '/interface/forms/odontogram/php/get_history.php',
+            type: 'POST',
+            data: { 
+                start: historyStartDate, 
+                end: historyEndDate, 
+                encounter: encounter,
+                filters: filters 
+            },
+            dataType: 'json',
+            success: function(history) {
+                historyLayer.clear();
+                history.forEach(function(item) {
+                    if (item.tooth_id) {
+                        applyStyles(item.tooth_id, item.svg_style, item.draw_d, item.draw_style);
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("<?php echo xl('Error loading dental history:'); ?> " + status + " - " + error);
+            }
+        });
+    }
 
-		function loadOptions(type) {
-			$.ajax({
-				url: '/interface/forms/odontogram/php/get_options.php',
-				type: 'POST',
-				data: { type: type },
-				dataType: 'json',
-				success: function(options) {
-					var $select = $('#editOption');
-					$select.empty();
-					if (options.error) {
-						$select.append(`<option value="">${options.error}</option>`);
-						return;
-					}
-					options.forEach(function(option) {
-						$select.append(`<option value="${option.option_id}" data-symbol="${option.symbol}" data-style="${option.symbol}" data-code="${option.codes}">${option.title}</option>`);
-					});
-					updateSymbolPreview();
-				},
-				error: function(xhr, status, error) {
-					console.error("<?php echo xl('AJAX Error in loading options:'); ?> " + status + " - " + error);
-				}
-			});
-		}
+    function applyStyles(toothId, svgStyle, drawD, drawStyle) {
+        var element = SVG('#' + toothId);
+        if (element && svgStyle) {
+            if (!svgStyle.includes('fill:')) {
+                svgStyle = 'fill: ' + svgStyle;
+            }
+            element.attr('style', svgStyle);
+        }
+        if (drawD && drawStyle) {
+            historyLayer.path(drawD).attr('style', drawStyle).attr('data-tooth-id', toothId);
+        }
+    }
 
-		function updateSymbolPreview() {
-			var selectedOption = $('#editOption option:selected');
-			var style = selectedOption.data('style');
-			var code = selectedOption.data('code');
-			$('#editCode').val(code || '');
-			var previewStyle = style.includes('fill:') ? style : 'fill: ' + style;
-			$('#symbol-preview').html(style ? `<div style="${previewStyle}; width: 30px; height: 30px;"></div>` : `<p><?php echo xl('No style available'); ?></p>`);
-		}
+    function loadOptions(type) {
+        $.ajax({
+            url: '/interface/forms/odontogram/php/get_options.php',
+            type: 'POST',
+            data: { type: type },
+            dataType: 'json',
+            success: function(options) {
+                var $select = $('#editOption');
+                $select.empty();
+                if (options.error) {
+                    $select.append(`<option value="">${options.error}</option>`);
+                    return;
+                }
+                options.forEach(function(option) {
+                    $select.append(`<option value="${option.option_id}" data-symbol="${option.symbol}" data-style="${option.symbol}" data-code="${option.codes}">${option.title}</option>`);
+                });
+                updateSymbolPreview();
+            },
+            error: function(xhr, status, error) {
+                console.error("<?php echo xl('AJAX Error in loading options:'); ?> " + status + " - " + error);
+            }
+        });
+    }
 
-		$('#editOption').change(updateSymbolPreview);
+    function updateSymbolPreview() {
+        var selectedOption = $('#editOption option:selected');
+        var style = selectedOption.data('style');
+        var code = selectedOption.data('code');
+        $('#editCode').val(code || '');
+        var previewStyle = style.includes('fill:') ? style : 'fill: ' + style;
+        $('#symbol-preview').html(style ? `<div style="${previewStyle}; width: 30px; height: 30px;"></div>` : `<p><?php echo xl('No style available'); ?></p>`);
+    }
 
-		$('#editTooth').click(function(e) {
-			e.preventDefault();
-			var toothName = $('#toothName').text();
-			var toothDetails = $('#toothDetails').text();
-			var svgId = window.lastClickedToothId;
+    $('#editOption').change(updateSymbolPreview);
 
-			$('#editToothName').text(toothName);
-			$('#editToothDetails').text(toothDetails);
-			$('#editSvgId').val(svgId);
-			loadOptions('diagnosis');
+    $('#editTooth').click(function(e) {
+        e.preventDefault();
+        var toothName = $('#toothName').text();
+        var toothDetails = $('#toothDetails').text();
+        var svgId = window.lastClickedToothId;
 
-			$('#toothModal').modal('hide');
-			$('#editModal').modal('show');
-		});
+        $('#editToothName').text(toothName);
+        $('#editToothDetails').text(toothDetails);
+        $('#editSvgId').val(svgId);
+        loadOptions('diagnosis');
 
-		$('#editModalOk').click(function() {
-			var toothId = $('#editSvgId').val();
-			var interventionType = $('#editInterventionType').val();
-			var optionId = $('#editOption').val();
-			var svgStyle = $('#editOption option:selected').data('style');
-			var code = $('#editOption option:selected').data('code');
-			var notes = $('#editNotes').val();
+        $('#toothModal').modal('hide');
+        $('#editModal').modal('show');
+    });
 
-			if (toothId && interventionType && optionId) {
-				if (svgStyle && !svgStyle.includes('fill:')) {
-					svgStyle = 'fill: ' + svgStyle;
-				}
-				pendingChanges[toothId] = pendingChanges[toothId] || {};
-				pendingChanges[toothId].intervention_type = interventionType;
-				pendingChanges[toothId].list_id = interventionTypeToListId[interventionType];
-				pendingChanges[toothId].option_id = optionId;
-				pendingChanges[toothId].code = code || null;
-				pendingChanges[toothId].svg_style = svgStyle;
-				pendingChanges[toothId].notes = notes || null;
-				applyStyles(toothId, svgStyle, null, null);
-				$('#editModal').modal('hide');
-			}
-		});
+    $('#editModalOk').click(function() {
+        var toothId = $('#editSvgId').val();
+        var interventionType = $('#editInterventionType').val();
+        var optionId = $('#editOption').val();
+        var svgStyle = $('#editOption option:selected').data('style');
+        var code = $('#editOption option:selected').data('code');
+        var notes = $('#editNotes').val();
 
-		$('#drawTooth').click(function() {
-			var toothId = window.lastClickedToothId;
-			if (toothId && editor) {
-				$('#toothModal').modal('hide');
-				$('#jsdraw-toolbar').show();
-				$('#drawing-layer').css('pointer-events', 'auto'); // Activar interacción solo al dibujar
+        if (toothId && interventionType && optionId) {
+            if (svgStyle && !svgStyle.includes('fill:')) {
+                svgStyle = 'fill: ' + svgStyle;
+            }
+            pendingChanges[toothId] = pendingChanges[toothId] || {};
+            pendingChanges[toothId].intervention_type = interventionType;
+            pendingChanges[toothId].list_id = interventionTypeToListId[interventionType];
+            pendingChanges[toothId].option_id = optionId;
+            pendingChanges[toothId].code = code || null;
+            pendingChanges[toothId].svg_style = svgStyle;
+            pendingChanges[toothId].notes = notes || null;
+            applyStyles(toothId, svgStyle, null, null);
+            $('#editModal').modal('hide');
+        }
+    });
 
-				$('#drawing-layer path').remove();
+    $('#drawTooth').click(function() {
+        var toothId = window.lastClickedToothId;
+        if (toothId) {
+            $('#toothModal').modal('hide');
+            $('#drawing-layer').css('pointer-events', 'auto');
+            $('#jsdraw-toolbar').show().empty();
 
-				var captureDrawing = function() {
-					var paths = $('#drawing-layer').find('path');
-					if (paths.length > 0) {
-						var path = paths.last()[0];
-						var drawD = path.getAttribute('d');
-						var stroke = path.getAttribute('stroke') || '#000000';
-						var strokeWidth = path.getAttribute('stroke-width') || '2';
-						var drawStyle = `stroke: ${stroke}; stroke-width: ${strokeWidth}; fill: none;`;
+            if (!editor) {
+                try {
+                    editor = new jsdraw.Editor(document.getElementById('drawing-layer'), {
+                        backgroundColor: 'transparent' // Intento inicial de transparencia
+                    });
 
-						pendingChanges[toothId] = pendingChanges[toothId] || {};
-						pendingChanges[toothId].draw_d = drawD;
-						pendingChanges[toothId].draw_style = drawStyle;
-						historyLayer.clear();
-						Object.keys(pendingChanges).forEach(function(id) {
-							applyStyles(id, pendingChanges[id].svg_style, pendingChanges[id].draw_d, pendingChanges[id].draw_style);
-						});
-						$('#jsdraw-toolbar').hide();
-						$('#drawing-layer').css('pointer-events', 'none'); // Desactivar tras dibujar
-						paths.remove();
-					}
-				};
+                    // Agregar la barra de herramientas
+                    editor.addToolbar();
 
-				if (!$('#finishDrawing').length) {
-					$('<button id="finishDrawing" class="btn btn-primary">Finish Drawing</button>')
-						.appendTo('#jsdraw-toolbar')
-						.click(function() {
-							captureDrawing();
-							$(this).remove();
-						});
-				}
-			} else {
-				console.error("Cannot activate drawing: editor not initialized or toothId missing.");
-			}
-		});
+                    // Depuración: Verificar el canvas y el toolbar
+                    console.log("Editor initialized:", editor);
+                    console.log("Canvas created:", $('#drawing-layer canvas')[0]);
+                    console.log("Toolbar element:", $('.js-draw-toolbar')[0]);
+                } catch (e) {
+                    console.error("Error initializing jsdraw:", e);
+                    return;
+                }
+            }
 
-		$('#saveForm').on('click', function() {
-			var changes = [];
-			Object.keys(pendingChanges).forEach(function(toothId) {
-				var change = {
-					tooth_id: toothId,
-					intervention_type: pendingChanges[toothId].intervention_type || 'Diagnosis',
-					list_id: pendingChanges[toothId].list_id,
-					option_id: pendingChanges[toothId].option_id,
-					code: pendingChanges[toothId].code,
-					svg_style: pendingChanges[toothId].svg_style,
-					draw_d: pendingChanges[toothId].draw_d,
-					draw_style: pendingChanges[toothId].draw_style,
-					notes: pendingChanges[toothId].notes,
-					pid: '<?php echo $pid; ?>',
-					encounter: '<?php echo $encounter; ?>',
-					user: '<?php echo $userId; ?>',
-					date: new Date().toISOString().slice(0, 19).replace('T', ' ')
-				};
-				changes.push(change);
-			});
+            $('#drawing-layer path').remove();
 
-			$.ajax({
-				url: '/interface/forms/odontogram/php/save_odontogram.php',
-				type: 'POST',
-				contentType: 'application/json',
-				data: JSON.stringify(changes),
-				dataType: 'json',
-				success: function(response) {
-					if (response.success) {
-						top.restoreSession();
-						window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
-					} else {
-						alert(xl('Failed to save odontogram') + ': ' + response.error);
-					}
-				},
-				error: function(xhr, status, error) {
-					alert(xl('Error saving odontogram') + ': ' + xhr.responseText);
-				}
-			});
-		});
+            if (!$('#finishDrawing').length) {
+                $('<button id="finishDrawing" class="btn btn-primary">Finish Drawing</button>')
+                    .appendTo('#jsdraw-toolbar')
+                    .click(function() {
+                        var svgData = editor.toSVG();
+                        var paths = $(svgData).find('path');
+                        if (paths.length > 0) {
+                            var path = paths.last()[0];
+                            var drawD = path.getAttribute('d');
+                            var stroke = path.getAttribute('stroke') || '#000000';
+                            var strokeWidth = path.getAttribute('stroke-width') || '2';
+                            var drawStyle = `stroke: ${stroke}; stroke-width: ${strokeWidth}; fill: none;`;
 
-		$('#cancelForm').on('click', function() {
-			top.restoreSession();
-			window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
-		});
+                            pendingChanges[toothId] = pendingChanges[toothId] || {};
+                            pendingChanges[toothId].draw_d = drawD;
+                            pendingChanges[toothId].draw_style = drawStyle;
+                            historyLayer.clear();
+                            Object.keys(pendingChanges).forEach(function(id) {
+                                applyStyles(id, pendingChanges[id].svg_style, pendingChanges[id].draw_d, pendingChanges[id].draw_style);
+                            });
+                        }
+                        $('#jsdraw-toolbar').hide();
+                        $('#drawing-layer').css('pointer-events', 'none').empty();
+                        editor = null;
+                        $(this).remove();
+                    });
+            }
+        } else {
+            console.error("Cannot activate drawing: toothId missing.");
+        }
+    });
 
-		$('#start_date, #end_date, #update_history, #filter_diagnosis, #filter_issue, #filter_procedures').on('change click', loadHistory);
-	});
-	</script>
+    $('#saveForm').on('click', function() {
+        var changes = [];
+        Object.keys(pendingChanges).forEach(function(toothId) {
+            var change = {
+                tooth_id: toothId,
+                intervention_type: pendingChanges[toothId].intervention_type || 'Diagnosis',
+                list_id: pendingChanges[toothId].list_id,
+                option_id: pendingChanges[toothId].option_id,
+                code: pendingChanges[toothId].code,
+                svg_style: pendingChanges[toothId].svg_style,
+                draw_d: pendingChanges[toothId].draw_d,
+                draw_style: pendingChanges[toothId].draw_style,
+                notes: pendingChanges[toothId].notes,
+                pid: '<?php echo $pid; ?>',
+                encounter: '<?php echo $encounter; ?>',
+                user: '<?php echo $userId; ?>',
+                date: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            };
+            changes.push(change);
+        });
+
+        $.ajax({
+            url: '/interface/forms/odontogram/php/save_odontogram.php',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(changes),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    top.restoreSession();
+                    window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
+                } else {
+                    alert(xl('Failed to save odontogram') + ': ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert(xl('Error saving odontogram') + ': ' + xhr.responseText);
+            }
+        });
+    });
+
+    $('#cancelForm').on('click', function() {
+        top.restoreSession();
+        window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
+    });
+
+    $('#start_date, #end_date, #update_history, #filter_diagnosis, #filter_issue, #filter_procedures').on('change click', loadHistory);
+});
+</script>
 </body>
 </html>
