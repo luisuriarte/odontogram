@@ -9,7 +9,7 @@ $end = $_POST['end'] ?? date('Y-m-d');
 $encounter = $_POST['encounter'] ?? 0;
 $filters = $_POST['filters'] ?? ['Diagnosis', 'Issue', 'Procedure'];
 
-$query = "SELECT odontogram_id, intervention_type, list_id, option_id, code, svg_style, draw_d, draw_style, notes 
+$query = "SELECT odontogram_id, intervention_type, list_id, option_id, code, svg_style, draw_d, draw_style, notes, date 
           FROM form_odontogram_history 
           WHERE date BETWEEN ? AND ? AND encounter = ? 
           AND intervention_type IN (" . implode(',', array_fill(0, count($filters), '?')) . ")";
@@ -21,13 +21,12 @@ try {
 
     $history = [];
     while ($row = sqlFetchArray($result)) {
-        // Obtener el tooth_id correspondiente desde form_odontogram
         $toothQuery = "SELECT tooth_id FROM form_odontogram WHERE id = ?";
         $toothResult = sqlQuery($toothQuery, [$row['odontogram_id']]);
         $toothId = $toothResult['tooth_id'] ?? null;
 
         $history[] = [
-            'tooth_id' => $toothId, // Devolvemos tooth_id para el frontend
+            'tooth_id' => $toothId,
             'odontogram_id' => $row['odontogram_id'],
             'intervention_type' => $row['intervention_type'],
             'list_id' => $row['list_id'],
@@ -36,7 +35,8 @@ try {
             'svg_style' => $row['svg_style'],
             'draw_d' => $row['draw_d'],
             'draw_style' => $row['draw_style'],
-            'notes' => $row['notes']
+            'notes' => $row['notes'],
+            'date' => $row['date']
         ];
     }
 

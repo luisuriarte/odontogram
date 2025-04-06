@@ -3,6 +3,9 @@ require_once("../../globals.php");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/patient.inc");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
+$csrf_token = CsrfUtils::collectCsrfToken();
+
 if (!isset($_SESSION['site_id'])) {
     $_SESSION['site_id'] = 'default';
 }
@@ -30,6 +33,7 @@ $start = $_POST['start'] ?? date('Y-m-d', strtotime('-10 years'));
 $endDate = $_POST['end_date'] ?? date('Y-m-d');
 ?>
 
+<input type="hidden" id="csrf_token_form" value="<?php echo attr($csrf_token); ?>">
 <html>
 <head>
 	<meta charset="UTF-8"> <!-- Forzar UTF-8 en la página -->
@@ -90,56 +94,6 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 		.palmer-symbol {
             color: red; /* Símbolo en rojo */
         }
-        .drawing-container {
-            position: relative;
-            width: 1048px;
-            height: 704px;
-        }
-        #jsdraw-toolbar {
-            position: absolute;
-            top: 10px;
-            left: 1060px;
-            background-color: #f5f5f5 !important; /* Fondo sólido */
-            padding: 10px 5px;
-            border: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            z-index: 10;
-        }
-        .tool-button {
-            width: 50px;
-            height: 50px;
-            margin-bottom: 10px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-        .tool-button:hover {
-            background-color: #e0e0e0;
-        }
-        .tool-button.active {
-            background-color: #d0d0ff;
-        }
-        #drawing-layer {
-            width: 1048px !important;
-            height: 704px !important;
-            background: transparent !important;
-        }
-        #drawing-layer canvas {
-            width: 1048px !important;
-            height: 704px !important;
-            background: transparent !important; /* Forzar transparencia del canvas */
-        }
-        .js-draw-toolbar {
-            position: absolute !important;
-            top: 10px !important;
-            left: 1060px !important;
-            background-color: #f5f5f5 !important; /* Fondo sólido */
-            border: 1px solid #ddd !important;
-            z-index: 10 !important;
-        }
     </style>
     <script>
         var defaultSystem = '<?php echo $defaultSystem; ?>';
@@ -148,7 +102,6 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
     </script>
 </head>
 <body>
-	<div id="jsdraw-toolbar"></div>
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="m-0"><?php echo xl('Odontogram'); ?></h2>
@@ -203,7 +156,6 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 					<div class="modal-footer">
 						<button type="button" class="btn btn-primary" id="editTooth"><?php echo xl('Edit'); ?></button>
 						<button type="button" class="btn btn-info" id="historyTooth"><?php echo xl('History'); ?></button>
-						<button type="button" class="btn btn-secondary" id="drawTooth"><?php echo xl('Draw'); ?></button>
 						<button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo xl('Close'); ?></button>
 					</div>
 				</div>
@@ -252,34 +204,27 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 				</div>
 			</div>
 		</div>
+    <!-- Contenedor para odontograma -->
+    <div id="odontogram-container">
+        <div id="odontogram-svg"></div>
     </div>
-    <!-- Contenedores para odontograma y lienzo -->
-    <div class="drawing-container" style="position: relative; width: 1048px; height: 704px;">
-        <div id="odontogram-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
-        <div id="drawing-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none;"></div>
-        <div id="jsdraw-toolbar" style="display: none;"></div>
+    <div class="form-footer mt-3">
+		<button type="button" class="btn btn-primary" id="saveForm"><?php echo xl('Save'); ?></button>
+		<button type="button" class="btn btn-secondary" id="cancelForm"><?php echo xl('Cancel'); ?></button>
+	</div>
     </div>
-</div>
+
 
 <script>
 $(document).ready(function() {
     var draw = SVG().addTo('#odontogram-svg').size(1048, 704);
     var historyLayer = draw.group().id('historyLayer');
     var pendingChanges = {};
-    var editor = null;
-
     var interventionTypeToListId = {
         'Diagnosis': 'odonto_diagnosis',
         'Issue': 'odonto_issue',
         'Procedure': 'odonto_procedures'
     };
-
-    // Chequeo inicial para confirmar que jsdraw está disponible
-    if (typeof jsdraw === 'undefined') {
-        console.error("jsdraw is not defined. Check if /interface/forms/odontogram/assets/js-draw-bundle.js loaded correctly.");
-    } else {
-        console.log("jsdraw loaded successfully:", jsdraw);
-    }
 
     loadHistory();
 
@@ -378,7 +323,7 @@ $(document).ready(function() {
                 historyLayer.clear();
                 history.forEach(function(item) {
                     if (item.tooth_id) {
-                        applyStyles(item.tooth_id, item.svg_style, item.draw_d, item.draw_style);
+                        applyStyles(item.tooth_id, item.svg_style, item.date);
                     }
                 });
             },
@@ -388,16 +333,13 @@ $(document).ready(function() {
         });
     }
 
-    function applyStyles(toothId, svgStyle, drawD, drawStyle) {
+    function applyStyles(toothId, svgStyle, date) {
         var element = SVG('#' + toothId);
         if (element && svgStyle) {
             if (!svgStyle.includes('fill:')) {
                 svgStyle = 'fill: ' + svgStyle;
             }
-            element.attr('style', svgStyle);
-        }
-        if (drawD && drawStyle) {
-            historyLayer.path(drawD).attr('style', drawStyle).attr('data-tooth-id', toothId);
+            element.addClass('tooth-part').attr('style', svgStyle).data('date', date || '');
         }
     }
 
@@ -430,7 +372,7 @@ $(document).ready(function() {
         var style = selectedOption.data('style');
         var code = selectedOption.data('code');
         $('#editCode').val(code || '');
-        var previewStyle = style.includes('fill:') ? style : 'fill: ' + style;
+        var previewStyle = style && style.includes('fill:') ? style : 'fill: ' + (style || '#000000');
         $('#symbol-preview').html(style ? `<div style="${previewStyle}; width: 30px; height: 30px;"></div>` : `<p><?php echo xl('No style available'); ?></p>`);
     }
 
@@ -441,6 +383,7 @@ $(document).ready(function() {
         var toothName = $('#toothName').text();
         var toothDetails = $('#toothDetails').text();
         var svgId = window.lastClickedToothId;
+        console.log("Edit clicked, toothId:", svgId); // Depuración
 
         $('#editToothName').text(toothName);
         $('#editToothDetails').text(toothDetails);
@@ -459,6 +402,8 @@ $(document).ready(function() {
         var code = $('#editOption option:selected').data('code');
         var notes = $('#editNotes').val();
 
+        console.log("Saving toothId:", toothId); // Depuración
+
         if (toothId && interventionType && optionId) {
             if (svgStyle && !svgStyle.includes('fill:')) {
                 svgStyle = 'fill: ' + svgStyle;
@@ -470,68 +415,8 @@ $(document).ready(function() {
             pendingChanges[toothId].code = code || null;
             pendingChanges[toothId].svg_style = svgStyle;
             pendingChanges[toothId].notes = notes || null;
-            applyStyles(toothId, svgStyle, null, null);
+            applyStyles(toothId, svgStyle, new Date().toISOString().slice(0, 19).replace('T', ' '));
             $('#editModal').modal('hide');
-        }
-    });
-
-    $('#drawTooth').click(function() {
-        var toothId = window.lastClickedToothId;
-        if (toothId) {
-            $('#toothModal').modal('hide');
-            $('#drawing-layer').css('pointer-events', 'auto');
-            $('#jsdraw-toolbar').show().empty();
-
-            if (!editor) {
-                try {
-                    editor = new jsdraw.Editor(document.getElementById('drawing-layer'), {
-                        backgroundColor: 'transparent' // Intento inicial de transparencia
-                    });
-
-                    // Agregar la barra de herramientas
-                    editor.addToolbar();
-
-                    // Depuración: Verificar el canvas y el toolbar
-                    console.log("Editor initialized:", editor);
-                    console.log("Canvas created:", $('#drawing-layer canvas')[0]);
-                    console.log("Toolbar element:", $('.js-draw-toolbar')[0]);
-                } catch (e) {
-                    console.error("Error initializing jsdraw:", e);
-                    return;
-                }
-            }
-
-            $('#drawing-layer path').remove();
-
-            if (!$('#finishDrawing').length) {
-                $('<button id="finishDrawing" class="btn btn-primary">Finish Drawing</button>')
-                    .appendTo('#jsdraw-toolbar')
-                    .click(function() {
-                        var svgData = editor.toSVG();
-                        var paths = $(svgData).find('path');
-                        if (paths.length > 0) {
-                            var path = paths.last()[0];
-                            var drawD = path.getAttribute('d');
-                            var stroke = path.getAttribute('stroke') || '#000000';
-                            var strokeWidth = path.getAttribute('stroke-width') || '2';
-                            var drawStyle = `stroke: ${stroke}; stroke-width: ${strokeWidth}; fill: none;`;
-
-                            pendingChanges[toothId] = pendingChanges[toothId] || {};
-                            pendingChanges[toothId].draw_d = drawD;
-                            pendingChanges[toothId].draw_style = drawStyle;
-                            historyLayer.clear();
-                            Object.keys(pendingChanges).forEach(function(id) {
-                                applyStyles(id, pendingChanges[id].svg_style, pendingChanges[id].draw_d, pendingChanges[id].draw_style);
-                            });
-                        }
-                        $('#jsdraw-toolbar').hide();
-                        $('#drawing-layer').css('pointer-events', 'none').empty();
-                        editor = null;
-                        $(this).remove();
-                    });
-            }
-        } else {
-            console.error("Cannot activate drawing: toothId missing.");
         }
     });
 
@@ -545,8 +430,6 @@ $(document).ready(function() {
                 option_id: pendingChanges[toothId].option_id,
                 code: pendingChanges[toothId].code,
                 svg_style: pendingChanges[toothId].svg_style,
-                draw_d: pendingChanges[toothId].draw_d,
-                draw_style: pendingChanges[toothId].draw_style,
                 notes: pendingChanges[toothId].notes,
                 pid: '<?php echo $pid; ?>',
                 encounter: '<?php echo $encounter; ?>',
@@ -557,15 +440,28 @@ $(document).ready(function() {
         });
 
         $.ajax({
-            url: '/interface/forms/odontogram/php/save_odontogram.php',
+            url: '/interface/forms/odontogram/save.php',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(changes),
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    top.restoreSession();
-                    window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
+                    // Registrar en la tabla forms
+                    $.ajax({
+                        url: '/interface/forms/odontogram/php/register_form.php', // Nuevo archivo para registrar
+                        type: 'POST',
+                        data: {
+                            encounter: '<?php echo $encounter; ?>',
+                            pid: '<?php echo $pid; ?>',
+                            userauthorized: '<?php echo $userauthorized; ?>',
+                            form_id: response.id // ID del historial o un ID único por encuentro
+                        },
+                        success: function() {
+                            top.restoreSession();
+                            window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
+                        }
+                    });
                 } else {
                     alert(xl('Failed to save odontogram') + ': ' + response.error);
                 }
@@ -575,7 +471,6 @@ $(document).ready(function() {
             }
         });
     });
-
     $('#cancelForm').on('click', function() {
         top.restoreSession();
         window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';

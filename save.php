@@ -1,13 +1,43 @@
 <?php
 ob_start();
 require_once("../../globals.php");
-require_once("$srcdir/forms.inc.php");
+require_once("$srcdir/forms.inc");
+require_once("$srcdir/patient.inc");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"] ?? '')) {
+    CsrfUtils::csrfNotVerified();
+}
+
+if (!isset($_SESSION['authUser'])) {
+    ob_end_clean();
+    http_response_code(403);
+    echo json_encode(['error' => xl('Unauthorized')]);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+if (!$data) {
+    ob_end_clean();
+    http_response_code(400);
+    echo json_encode(['error' => xl('Invalid data received')]);
+    exit;
+}
+
+if (!is_array($data) || empty($data)) {
+    ob_end_clean();
+    http_response_code(400);
+    echo json_encode(['error' => xl('No changes to save')]);
+    exit;
+}
 
 $pid = $_SESSION['pid'] ?? 0;
 $encounter = $_SESSION['encounter'] ?? 0;
 $user = $_SESSION['authUser'] ?? '';
 $groupname = $_SESSION['authGroup'] ?? '';
 $authorized = $_SESSION['userauthorized'] ?? 0;
+$activity = 1;
 
 if (!$pid || !$encounter) {
     ob_end_clean();
@@ -16,24 +46,50 @@ if (!$pid || !$encounter) {
     exit;
 }
 
-// Verificar si ya existe un formulario en forms para este encuentro
-$existing_form = sqlQuery("SELECT id, form_id FROM forms WHERE encounter = ? AND formdir = 'odontogram' AND deleted = 0", [$encounter]);
-$existing_form_id = $existing_form['id'] ?? null;
-$form_id = $existing_form['form_id'] ?? null;
+$success = true;
+$last_history_id = null;
+foreach ($data as $change) {
+    $tooth_id = $change['tooth_id'] ?? '';
+    $intervention_type = $change['intervention_type'] ?? '';
+    $option_id = $change['option_id'] ?? '';
+    $svg_style = $change['svg_style'] ?? '';
+    $code = $change['code'] ?? '';
+    $notes = $change['notes'] ?? '';
+    $date = $change['date'] ?? date('Y-m-d H:i:s');
 
-if (!$existing_form_id) {
-    // Generar un nuevo form_id con sequences
-    $form_id = generate_id();
+    if (empty($tooth_id) || empty($intervention_type) || empty($option_id)) {
+        $success = false;
+        continue;
+    }
 
-    // Registrar el formulario en la tabla forms
-    sqlInsert(
-        "INSERT INTO forms (date, encounter, form_name, form_id, pid, user, groupname, authorized, formdir) 
-         VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, 'odontogram')",
-        [$encounter, "Odontogram", $form_id, $pid, $user, $groupname, $authorized]
-    );
+    $odontogram_id = sqlQuery("SELECT id FROM form_odontogram WHERE tooth_id = ?", [$tooth_id])['id'] ?? null;
+    if (!$odontogram_id) {
+        $odontogram_id = sqlInsert("INSERT INTO form_odontogram (tooth_id) VALUES (?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)", [$tooth_id]);
+    }
+
+    $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, option_id, svg_style, date, code, notes, user, groupname, authorized, activity) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $params = [$pid, $encounter, $odontogram_id, $intervention_type, $option_id, $svg_style, $date, $code, $notes, $user, $groupname, $authorized, $activity];
+
+    try {
+        $history_id = sqlInsert($sql, $params);
+        if ($history_id) {
+            $last_history_id = $history_id; // Guardamos el último ID
+        } else {
+            $success = false;
+        }
+    } catch (Exception $e) {
+        $success = false;
+        error_log("save_odontogram.php - Error: " . $e->getMessage());
+    }
 }
 
 ob_end_clean();
 header('Content-Type: application/json');
-echo json_encode(['success' => true, 'form_id' => $form_id]);
+if ($success) {
+    echo json_encode(['success' => true, 'id' => $last_history_id]);
+} else {
+    http_response_code(500);
+    echo json_encode(['error' => xl('Failed to save some changes')]);
+}
 exit;
