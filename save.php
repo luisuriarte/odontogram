@@ -63,9 +63,6 @@ foreach ($data as $change) {
     }
 
     $odontogram_id = sqlQuery("SELECT id FROM form_odontogram WHERE tooth_id = ?", [$tooth_id])['id'] ?? null;
-    if (!$odontogram_id) {
-        $odontogram_id = sqlInsert("INSERT INTO form_odontogram (tooth_id) VALUES (?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)", [$tooth_id]);
-    }
 
     $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, option_id, svg_style, date, code, notes, user, groupname, authorized, activity) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -80,7 +77,7 @@ foreach ($data as $change) {
         }
     } catch (Exception $e) {
         $success = false;
-        error_log("save_odontogram.php - Error: " . $e->getMessage());
+        error_log("save.php - Error: " . $e->getMessage());
     }
 }
 
