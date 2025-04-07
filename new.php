@@ -4,6 +4,8 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/patient.inc");
 
 use OpenEMR\Common\Csrf\CsrfUtils;
+
+$formid = (int) (isset($_GET['id']) ? $_GET['id'] : 0); // Obtener formid de la URL
 $csrf_token = CsrfUtils::collectCsrfToken();
 
 if (!isset($_SESSION['site_id'])) {
@@ -13,12 +15,21 @@ if (!isset($_SESSION['site_id'])) {
 $pid = $_SESSION['pid'] ?? 0;
 $encounter = $_SESSION['encounter'] ?? 0;
 $userId = $_SESSION['authUserID'];
-$professionalName = $_SESSION['authUser'] ?? xl('Unknown'); // Logged-in professional's name
+$professionalName = $_SESSION['authUser'] ?? xl('Unknown');
 
+// Cargar preferencia del sistema de numeración
 $sql = "SELECT odontogram_preference FROM users WHERE id = ?";
 $result = sqlQuery($sql, array($userId));
 $defaultSystem = $result['odontogram_preference'] ?? 'FDI';
 
+// Cargar datos existentes si formid está presente
+$history = [];
+if ($formid) {
+    $sql = "SELECT * FROM form_odontogram_history WHERE id = ?";
+    $history = sqlQuery($sql, array($formid));
+}
+
+// Actualizar preferencia si se envía
 if (isset($_POST['system'])) {
     $newSystem = $_POST['system'];
     if (in_array($newSystem, ['FDI', 'Universal', 'Palmer'])) {
@@ -216,6 +227,9 @@ $endDate = $_POST['end_date'] ?? date('Y-m-d');
 
 
 <script>
+var userId = '<?php echo $userId; ?>';
+var csrfToken = '<?php echo attr($csrf_token); ?>';
+
 $(document).ready(function() {
     var draw = SVG().addTo('#odontogram-svg').size(1048, 704);
     var historyLayer = draw.group().id('historyLayer');
@@ -420,17 +434,20 @@ $(document).ready(function() {
         }
     });
 
-    $('#saveForm').on('click', function() {
-        var changes = [];
+    $('#saveForm').on('click', function(e) {
+        e.preventDefault();
+        top.restoreSession();
+
+        let changes = [];
         Object.keys(pendingChanges).forEach(function(toothId) {
             var change = {
                 tooth_id: toothId,
                 intervention_type: pendingChanges[toothId].intervention_type || 'Diagnosis',
                 list_id: pendingChanges[toothId].list_id,
                 option_id: pendingChanges[toothId].option_id,
-                code: pendingChanges[toothId].code,
-                svg_style: pendingChanges[toothId].svg_style,
-                notes: pendingChanges[toothId].notes,
+                code: pendingChanges[toothId].code || null,
+                svg_style: pendingChanges[toothId].svg_style || '',
+                notes: pendingChanges[toothId].notes || '',
                 pid: '<?php echo $pid; ?>',
                 encounter: '<?php echo $encounter; ?>',
                 user: '<?php echo $userId; ?>',
@@ -439,41 +456,38 @@ $(document).ready(function() {
             changes.push(change);
         });
 
+        if (changes.length === 0) {
+            alert("No hay cambios para guardar.");
+            return;
+        }
+
         $.ajax({
-            url: '/interface/forms/odontogram/save.php',
+            url: '/interface/forms/odontogram/save.php?id=<?php echo attr_url($formid); ?>',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(changes),
+            data: JSON.stringify({ changes: changes }),
             dataType: 'json',
+            headers: {
+                'X-CSRF-Token': csrfToken
+            },
             success: function(response) {
-                if (response.success) {
-                    // Registrar en la tabla forms
-                    $.ajax({
-                        url: '/interface/forms/odontogram/php/register_form.php', // Nuevo archivo para registrar
-                        type: 'POST',
-                        data: {
-                            encounter: '<?php echo $encounter; ?>',
-                            pid: '<?php echo $pid; ?>',
-                            userauthorized: '<?php echo $userauthorized; ?>',
-                            form_id: response.id // ID del historial o un ID único por encuentro
-                        },
-                        success: function() {
-                            top.restoreSession();
-                            window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
-                        }
-                    });
-                } else {
+                if (!response.success) {
                     alert(xl('Failed to save odontogram') + ': ' + response.error);
                 }
             },
             error: function(xhr, status, error) {
                 alert(xl('Error saving odontogram') + ': ' + xhr.responseText);
+            },
+            complete: function() {
+                parent.closeTab(window.name, false); // Cerrar pestaña siempre al finalizar
             }
         });
     });
-    $('#cancelForm').on('click', function() {
-        top.restoreSession();
-        window.location.href = '<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/encounter/encounter_top.php';
+
+    $('#cancelForm').on('click', function(e) {
+        e.preventDefault(); // Evitar comportamiento por defecto del botón
+        top.restoreSession(); // Mantener la sesión activa
+        parent.closeTab(window.name, false); // Cerrar la pestaña al cancelar
     });
 
     $('#start_date, #end_date, #update_history, #filter_diagnosis, #filter_issue, #filter_procedures').on('change click', loadHistory);
