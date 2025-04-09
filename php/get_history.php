@@ -1,49 +1,39 @@
 <?php
-require_once '../../../globals.php';
-require_once "$srcdir/sql.inc.php";
+require_once("../../../globals.php");
+require_once("$srcdir/sql.inc.php");
 
-header('Content-Type: application/json; charset=UTF-8');
-
-$start = $_POST['start'] ?? date('Y-m-d', strtotime('-10 years'));
-$end = $_POST['end'] ?? date('Y-m-d');
+$start = $_POST['start'] ?? '';
+$end = $_POST['end'] ?? '';
 $encounter = $_POST['encounter'] ?? 0;
-$filters = $_POST['filters'] ?? ['Diagnosis', 'Issue', 'Procedure'];
+$filters = $_POST['filters'] ?? [];
 
-$query = "SELECT odontogram_id, intervention_type, list_id, option_id, code, svg_style, draw_d, draw_style, notes, date 
-          FROM form_odontogram_history 
-          WHERE date BETWEEN ? AND ? AND encounter = ? 
-          AND intervention_type IN (" . implode(',', array_fill(0, count($filters), '?')) . ")";
-$params = [$start . ' 00:00:00', $end . ' 23:59:59', $encounter];
-$params = array_merge($params, $filters);
+$sql = "SELECT h.tooth_id, h.intervention_type, h.option_id, h.svg_style, h.date, h.code, h.notes, o.style AS original_style 
+        FROM form_odontogram_history h
+        LEFT JOIN form_odontogram o ON h.tooth_id = o.tooth_id
+        WHERE h.pid = ? AND h.encounter = ?";
+$params = [$_SESSION['pid'], $encounter];
 
-try {
-    $result = sqlStatement($query, $params);
-
-    $history = [];
-    while ($row = sqlFetchArray($result)) {
-        $toothQuery = "SELECT tooth_id FROM form_odontogram WHERE id = ?";
-        $toothResult = sqlQuery($toothQuery, [$row['odontogram_id']]);
-        $toothId = $toothResult['tooth_id'] ?? null;
-
-        $history[] = [
-            'tooth_id' => $toothId,
-            'odontogram_id' => $row['odontogram_id'],
-            'intervention_type' => $row['intervention_type'],
-            'list_id' => $row['list_id'],
-            'option_id' => $row['option_id'],
-            'code' => $row['code'],
-            'svg_style' => $row['svg_style'],
-            'draw_d' => $row['draw_d'],
-            'draw_style' => $row['draw_style'],
-            'notes' => $row['notes'],
-            'date' => $row['date']
-        ];
-    }
-
-    echo json_encode($history);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+if ($start) {
+    $sql .= " AND h.date >= ?";
+    $params[] = $start . " 00:00:00";
+}
+if ($end) {
+    $sql .= " AND h.date <= ?";
+    $params[] = $end . " 23:59:59";
+}
+if (!empty($filters)) {
+    $sql .= " AND h.intervention_type IN (" . implode(',', array_fill(0, count($filters), '?')) . ")";
+    $params = array_merge($params, $filters);
 }
 
+$sql .= " ORDER BY h.date ASC";
+
+$result = sqlStatement($sql, $params);
+$history = [];
+while ($row = sqlFetchArray($result)) {
+    $history[] = $row;
+}
+
+header('Content-Type: application/json');
+echo json_encode($history);
 exit;

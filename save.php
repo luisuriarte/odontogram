@@ -89,7 +89,6 @@ if ($id && $id != 0) {
     foreach ($changes as $change) {
         $tooth_id = $change['tooth_id'] ?? '';
         $intervention_type = $change['intervention_type'] ?? '';
-        $option_id = $change['option_id'] ?? '';
         $svg_style = $change['svg_style'] ?? '';
         $code = $change['code'] ?? '';
         $notes = $change['notes'] ?? '';
@@ -110,9 +109,9 @@ if ($id && $id != 0) {
             continue;
         }
 
-        $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, option_id, svg_style, date, code, notes, user, groupname, authorized, activity) 
+        $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, intervention_type, tooth_id, svg_style, date, code, notes, user, groupname, authorized, activity) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $params = [$pid, $encounter, $odontogram_id, $intervention_type, $option_id, $svg_style, $date, $code, $notes, $user, $groupname, $authorized, $activity];
+        $params = [$pid, $encounter, $odontogram_id, $intervention_type, $tooth_id, $svg_style, $date, $code, $notes, $user, $groupname, $authorized, $activity];
 
         try {
             $history_id = sqlInsert($sql, $params);

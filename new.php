@@ -334,10 +334,45 @@ $(document).ready(function() {
             },
             dataType: 'json',
             success: function(history) {
-                historyLayer.clear();
+                historyLayer.clear(); // Limpiar el layer histórico
+
+                // Mapa para almacenar el estado más reciente por diente dentro del filtro
+                var latestStyles = {};
+
+                // Procesar el historial
                 history.forEach(function(item) {
                     if (item.tooth_id) {
-                        applyStyles(item.tooth_id, item.svg_style, item.date);
+                        latestStyles[item.tooth_id] = {
+                            svg_style: item.svg_style,
+                            date: item.date,
+                            original_style: item.original_style
+                        };
+                    }
+                });
+
+                // Aplicar estilos a todos los dientes
+                Object.keys(latestStyles).forEach(function(toothId) {
+                    var styleData = latestStyles[toothId];
+                    var styleToApply = styleData.svg_style || styleData.original_style;
+                    applyStyles(toothId, styleToApply, styleData.date);
+                });
+
+                // Restaurar estilo original para dientes sin historial dentro del filtro
+                var allTeeth = draw.find('.tooth-part'); // Asumiendo que tienes una clase para los dientes
+                allTeeth.forEach(function(tooth) {
+                    var toothId = tooth.id();
+                    if (!latestStyles[toothId] && toothId) {
+                        $.ajax({
+                            url: '/interface/forms/odontogram/php/get_tooth_details.php',
+                            type: 'POST',
+                            data: { tooth_id: toothId, user_id: userId },
+                            dataType: 'json',
+                            success: function(data) {
+                                if (data.style) {
+                                    applyStyles(toothId, data.style);
+                                }
+                            }
+                        });
                     }
                 });
             },
@@ -351,12 +386,11 @@ $(document).ready(function() {
         var element = SVG('#' + toothId);
         if (element && svgStyle) {
             if (!svgStyle.includes('fill:')) {
-                svgStyle = 'fill: ' + svgStyle;
+                svgStyle = 'fill: ' + svgStyle; // Ajustar si es necesario
             }
             element.addClass('tooth-part').attr('style', svgStyle).data('date', date || '');
         }
     }
-
     function loadOptions(type) {
         $.ajax({
             url: '/interface/forms/odontogram/php/get_options.php',
