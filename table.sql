@@ -1,5 +1,4 @@
 -- openemr.form_odontogram definition
-
 CREATE TABLE `form_odontogram` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `universal` varchar(10) DEFAULT NULL,
