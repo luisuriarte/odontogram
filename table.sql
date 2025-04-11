@@ -19,7 +19,6 @@ CREATE TABLE `form_odontogram` (
   `sodipodi` varchar(100) DEFAULT NULL,
   `svg_type` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `svg_id_idx` (`tooth_id`),
   KEY `odontogram_id_IDX` (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=345 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -44,7 +43,7 @@ CREATE TABLE `form_odontogram_history` (
   `draw_style` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `odontogram_id` (`odontogram_id`),
-  KEY `list_option_idx` (`tooth_id`,`option_id`)
+  KEY `form_odontogram_history_odontogram_id_IDX` (`odontogram_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 ALTER TABLE users
