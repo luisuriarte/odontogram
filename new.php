@@ -1,7 +1,8 @@
 <?php
 require_once("../../globals.php");
-require_once("$srcdir/forms.inc");
-require_once("$srcdir/patient.inc");
+require_once("$srcdir/forms.inc.php");
+require_once("$srcdir/patient.inc.php");
+require_once("$srcdir/options.inc.php");
 
 use OpenEMR\Common\Csrf\CsrfUtils;
 
@@ -315,8 +316,8 @@ $(document).ready(function() {
     });
 
     function loadHistory() {
-        var historyStartDate = $('#start_date').val() || '<?php echo $start; ?>';
-        var historyEndDate = $('#end_date').val() || '<?php echo $endDate; ?>';
+        var historyStartDate = $('#start_date').val() || '';
+        var historyEndDate = $('#end_date').val() || '';
         var encounter = '<?php echo $_SESSION['encounter'] ?? 0; ?>';
         var filters = [];
         if ($('#filter_diagnosis').is(':checked')) filters.push('Diagnosis');
@@ -336,39 +337,42 @@ $(document).ready(function() {
             success: function(history) {
                 historyLayer.clear(); // Limpiar el layer histórico
 
-                // Mapa para almacenar el estado más reciente por diente dentro del filtro
+                // Mapa para almacenar el estado más reciente por diente
                 var latestStyles = {};
 
-                // Procesar el historial
                 history.forEach(function(item) {
                     if (item.tooth_id) {
                         latestStyles[item.tooth_id] = {
                             svg_style: item.svg_style,
+                            draw_d: item.draw_d,
+                            draw_style: item.draw_style,
                             date: item.date,
                             original_style: item.original_style
                         };
                     }
                 });
 
-                // Aplicar estilos a todos los dientes
+                // Aplicar estilos filtrados
                 Object.keys(latestStyles).forEach(function(toothId) {
                     var styleData = latestStyles[toothId];
                     var styleToApply = styleData.svg_style || styleData.original_style;
-                    applyStyles(toothId, styleToApply, styleData.date);
+                    var drawDToApply = styleData.draw_d || '';
+                    var drawStyleToApply = styleData.draw_style || '';
+                    applyStyles(toothId, styleToApply, styleData.date, drawDToApply, drawStyleToApply);
                 });
 
-                // Restaurar estilo original para dientes sin historial dentro del filtro
-                var allTeeth = draw.find('.tooth-part'); // Asumiendo que tienes una clase para los dientes
+                // Restaurar estilo original para dientes sin historial en el filtro
+                var allTeeth = draw.find('.tooth-part');
                 allTeeth.forEach(function(tooth) {
                     var toothId = tooth.id();
                     if (!latestStyles[toothId] && toothId) {
                         $.ajax({
                             url: '/interface/forms/odontogram/php/get_tooth_details.php',
                             type: 'POST',
-                            data: { tooth_id: toothId, user_id: userId },
+                            data: { tooth_id: toothId },
                             dataType: 'json',
                             success: function(data) {
-                                if (data.style) {
+                                if (data && data.style) {
                                     applyStyles(toothId, data.style);
                                 }
                             }
@@ -377,7 +381,7 @@ $(document).ready(function() {
                 });
             },
             error: function(xhr, status, error) {
-                console.error("<?php echo xl('Error loading dental history:'); ?> " + status + " - " + error);
+                console.error("Error loading dental history: " + status + " - " + error);
             }
         });
     }
@@ -405,7 +409,7 @@ $(document).ready(function() {
                     return;
                 }
                 options.forEach(function(option) {
-                    $select.append(`<option value="${option.option_id}" data-symbol="${option.symbol}" data-style="${option.symbol}" data-code="${option.codes}">${option.title}</option>`);
+                    $select.append(`<option value="${option.option_id}" data-symbol="${option.symbol}" data-codes="${option.codes}">${option.title}</option>`);
                 });
                 updateSymbolPreview();
             },
@@ -417,26 +421,34 @@ $(document).ready(function() {
 
     function updateSymbolPreview() {
         var selectedOption = $('#editOption option:selected');
-        var style = selectedOption.data('style');
-        var code = selectedOption.data('code');
-        $('#editCode').val(code || '');
-        var previewStyle = style && style.includes('fill:') ? style : 'fill: ' + (style || '#000000');
-        $('#symbol-preview').html(style ? `<div style="${previewStyle}; width: 30px; height: 30px;"></div>` : `<p><?php echo xl('No style available'); ?></p>`);
+        var symbol = selectedOption.data('symbol') || '';
+        var codes = selectedOption.data('codes') || '';
+        $('#editCode').val(codes);
+        var previewStyle = symbol && symbol.includes('fill:') ? symbol : 'fill: ' + (symbol || '#000000');
+        $('#symbol-preview').html(symbol ? `<div style="${previewStyle}; width: 30px; height: 30px;"></div>` : `<p><?php echo xl('No style available'); ?></p>`);
     }
 
     $('#editOption').change(updateSymbolPreview);
 
+    // Vincular cambio de tipo de intervención
+    $('#editInterventionType').change(function() {
+        var type = $(this).val().toLowerCase();
+        if (type === 'diagnosis' || type === 'issue' || type === 'procedure') {
+            loadOptions(type);
+        }
+    });
+
+    // Cargar opciones iniciales al abrir el modal
     $('#editTooth').click(function(e) {
         e.preventDefault();
         var toothName = $('#toothName').text();
         var toothDetails = $('#toothDetails').text();
         var svgId = window.lastClickedToothId;
-        console.log("Edit clicked, toothId:", svgId); // Depuración
 
         $('#editToothName').text(toothName);
         $('#editToothDetails').text(toothDetails);
         $('#editSvgId').val(svgId);
-        loadOptions('diagnosis');
+        loadOptions('diagnosis'); // Cargar diagnóstico por defecto
 
         $('#toothModal').modal('hide');
         $('#editModal').modal('show');

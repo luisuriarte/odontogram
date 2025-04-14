@@ -7,9 +7,9 @@ $end = $_POST['end'] ?? '';
 $encounter = $_POST['encounter'] ?? 0;
 $filters = $_POST['filters'] ?? [];
 
-$sql = "SELECT h.tooth_id, h.intervention_type, h.option_id, h.svg_style, h.date, h.code, h.notes, o.style AS original_style 
+$sql = "SELECT h.tooth_id, h.intervention_type, h.option_id, h.svg_style, h.draw_d, h.draw_style, h.date, h.code, h.notes, o.style AS original_style 
         FROM form_odontogram_history h
-        LEFT JOIN form_odontogram o ON h.tooth_id = o.tooth_id
+        LEFT JOIN form_odontogram o ON h.odontogram_id = o.id
         WHERE h.pid = ? AND h.encounter = ?";
 $params = [$_SESSION['pid'], $encounter];
 
