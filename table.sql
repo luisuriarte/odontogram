@@ -49,13 +49,18 @@ CREATE TABLE `form_odontogram_history` (
 ALTER TABLE users
 ADD COLUMN odontogram_preference ENUM('Universal','FDI','Palmer') DEFAULT NULL;
 
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('lists', 'odonto_diagnosis', 'odonto_diagnosis', 330, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:02:36.000', '2025-03-09 15:02:36.000');
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('lists', 'odonto_issue', 'odonto_issue', 332, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:09:38.000', '2025-03-09 15:09:38.000');
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('lists', 'odonto_procedures', 'odonto_procedures', 331, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:09:22.000', '2025-03-09 15:09:22.000');
+-- New 3 lists in list_options table. 
+INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES
+	('lists', 'odonto_diagnosis', 'odonto_diagnosis', 330, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:02:36.000', '2025-03-09 15:02:36.000');
+INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES
+	('lists', 'odonto_issue', 'odonto_issue', 332, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:09:38.000', '2025-03-09 15:09:38.000');
+INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES
+	('lists', 'odonto_procedures', 'odonto_procedures', 331, 1, 0.0, '', NULL, '', 0, 0, 1, '', 1, '2025-03-09 15:09:22.000', '2025-03-09 15:09:22.000');
 
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('odonto_diagnosis', 'initial_caries', 'Initial Caries', 1, 0, 0.0, '', 'yellow', 'ICD10:K0251', 0, 0, 1, '', 1, '2025-03-09 15:23:13.000', '2025-03-09 15:23:13.000');
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('odonto_diagnosis', 'moderate_caries', 'Moderate Caries', 2, 0, 0.0, '', 'orange', 'ICD10:K0261', 0, 0, 1, '', 1, '2025-03-09 15:23:13.000', '2025-03-09 15:23:13.000');
-INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES('odonto_diagnosis', 'severe_caries', 'Severe Caries', 3, 0, 0.0, '', 'red', 'ICD10:K08431', 0, 0, 1, '', 1, '2025-03-09 15:23:14.000', '2025-03-09 15:23:14.000');
+INSERT INTO openemr.list_options (list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype, edit_options, `timestamp`, last_updated) VALUES
+	('odonto_diagnosis', 'initial_caries', 'Initial Caries', 1, 0, 0.0, '', 'yellow', 'ICD10:K0251', 0, 0, 1, '', 1, '2025-03-09 15:23:13.000', '2025-03-09 15:23:13.000'),
+	('odonto_diagnosis', 'moderate_caries', 'Moderate Caries', 2, 0, 0.0, '', 'orange', 'ICD10:K0261', 0, 0, 1, '', 1, '2025-03-09 15:23:13.000', '2025-03-09 15:23:13.000'),
+	('odonto_diagnosis', 'severe_caries', 'Severe Caries', 3, 0, 0.0, '', 'red', 'ICD10:K08431', 0, 0, 1, '', 1, '2025-03-09 15:23:14.000', '2025-03-09 15:23:14.000');
 
 -- LLenado de form_odontogram 
 INSERT INTO openemr.form_odontogram (id,universal,fdi,palmer,dentition_type,name,part,arc,`style`,side,tooth_id,d,width,height,x,y,sodipodi,svg_type) VALUES
