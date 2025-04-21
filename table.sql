@@ -1,5 +1,5 @@
 -- openemr.form_odontogram definition
-REATE TABLE `form_odontogram` (
+CREATE TABLE `form_odontogram` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `universal` varchar(10) DEFAULT NULL COMMENT 'Universal numbers and letters',
   `fdi` varchar(10) DEFAULT NULL COMMENT 'FDI Numbers',

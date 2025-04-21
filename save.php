@@ -1,131 +1,73 @@
 <?php
-ob_start();
 require_once("../../globals.php");
-require_once("$srcdir/forms.inc");
-require_once("$srcdir/patient.inc");
+require_once("$srcdir/forms.inc.php");
+require_once("$srcdir/translation.inc.php");
 
 use OpenEMR\Common\Csrf\CsrfUtils;
 
-if (!CsrfUtils::verifyCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
     CsrfUtils::csrfNotVerified();
 }
 
-$pid = $_SESSION['pid'] ?? 0;
-$encounter = $_SESSION['encounter'] ?? 0;
-$user = $_SESSION['authUser'] ?? '';
-$groupname = $_SESSION['authGroup'] ?? '';
-$authorized = $_SESSION['userauthorized'] ?? 0;
+$encounter = $_SESSION['encounter'];
+$pid = $_SESSION['pid'];
+$user = $_SESSION['authUser'];
+$groupname = $_SESSION['authGroup'];
+$authorized = 1;
 $activity = 1;
+$formid = (int) ($_POST['formid'] ?? 0);
 
-if (!$pid || !$encounter) {
-    ob_end_clean();
-    http_response_code(400);
-    echo json_encode(['error' => xl('Missing patient or encounter context')]);
+if (!$encounter) {
+    echo json_encode(['success' => false, 'message' => xlt('No encounter specified')]);
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
-if (!$data || !is_array($data)) {
-    ob_end_clean();
-    http_response_code(400);
-    echo json_encode(['error' => xl('Invalid or no data received')]);
+$interventions = json_decode($_POST['interventions'], true);
+if (empty($interventions)) {
+    echo json_encode(['success' => false, 'message' => xlt('No interventions provided')]);
     exit;
 }
 
-$changes = $data['changes'] ?? [];
-if (empty($changes)) {
-    ob_end_clean();
-    http_response_code(400);
-    echo json_encode(['error' => xl('No changes to save')]);
-    exit;
-}
+sqlBeginTrans();
+$insertedIds = [];
 
-$success = true;
-$last_history_id = null;
-$id = (int) (isset($_GET['id']) ? $_GET['id'] : 0);
+foreach ($interventions as $intervention) {
+    $tooth_id = $intervention['tooth_id'];
+    $intervention_type = $intervention['intervention_type'];
+    $option_id = $intervention['option_id'];
+    $code = $intervention['code'];
+    $notes = $intervention['notes'];
+    $svg_style = $intervention['svg_style'];
 
-if ($id && $id != 0) {
-    // Actualizar registro existente
-    foreach ($changes as $change) {
-        $tooth_id = $change['tooth_id'] ?? '';
-        $intervention_type = $change['intervention_type'] ?? '';
-        $option_id = $change['option_id'] ?? '';
-        $svg_style = $change['svg_style'] ?? '';
-        $code = $change['code'] ?? '';
-        $notes = $change['notes'] ?? '';
-        $draw_d = $change['draw_d'] ?? '';
-        $draw_style = $change['draw_style'] ?? '';
-        $date = $change['date'] ?? date('Y-m-d H:i:s');
-
-        if (empty($tooth_id) || empty($intervention_type) || empty($option_id)) {
-            $success = false;
-            continue;
-        }
-
-        $sql = "UPDATE form_odontogram_history SET intervention_type=?, option_id=?, svg_style=?, date=?, code=?, notes=?, draw_d=?, draw_style=?, user=?, groupname=?, authorized=?, activity=? WHERE id=?";
-        $params = [$intervention_type, $option_id, $svg_style, $date, $code, $notes, $draw_d, $draw_style, $user, $groupname, $authorized, $activity, $id];
-        try {
-            sqlStatement($sql, $params);
-        } catch (Exception $e) {
-            $success = false;
-            error_log("save.php - Error updating: " . $e->getMessage());
-        }
+    // Validar tooth_id
+    $toothCheck = sqlQuery("SELECT id FROM form_odontogram WHERE tooth_id = ?", [$tooth_id]);
+    if (empty($toothCheck)) {
+        sqlRollbackTrans();
+        echo json_encode(['success' => false, 'message' => xlt('Invalid tooth ID') . ": $tooth_id"]);
+        exit;
     }
-    $last_history_id = $id;
-} else {
-    // Insertar nuevo registro
-    foreach ($changes as $change) {
-        $tooth_id = $change['tooth_id'] ?? '';
-        $intervention_type = $change['intervention_type'] ?? '';
-        $option_id = $change['option_id'] ?? '';
-        $svg_style = $change['svg_style'] ?? '';
-        $code = $change['code'] ?? '';
-        $notes = $change['notes'] ?? '';
-        $draw_d = $change['draw_d'] ?? '';
-        $draw_style = $change['draw_style'] ?? '';
-        $date = $change['date'] ?? date('Y-m-d H:i:s');
+    $odontogram_id = $toothCheck['id'];
 
-        if (empty($tooth_id) || empty($intervention_type) || empty($option_id)) {
-            $success = false;
-            continue;
-        }
-
-        // Obtener odontogram_id basado en tooth_id
-        $odontogram_id = sqlQuery("SELECT id FROM form_odontogram WHERE tooth_id = ?", [$tooth_id])['id'] ?? null;
-        if (!$odontogram_id) {
-            $success = false;
-            error_log("save.php - Error: No odontogram_id found for tooth_id: $tooth_id");
-            continue;
-        }
-
-        $sql = "INSERT INTO form_odontogram_history (pid, encounter, odontogram_id, tooth_id, intervention_type, option_id, svg_style, date, code, notes, draw_d, draw_style, user, groupname, authorized, activity) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $params = [$pid, $encounter, $odontogram_id, $tooth_id, $intervention_type, $option_id, $svg_style, $date, $code, $notes, $draw_d, $draw_style, $user, $groupname, $authorized, $activity];
-
-        try {
-            $history_id = sqlInsert($sql, $params);
-            if ($history_id) {
-                $last_history_id = $history_id;
-            } else {
-                $success = false;
-            }
-        } catch (Exception $e) {
-            $success = false;
-            error_log("save.php - Error inserting: " . $e->getMessage());
-        }
+    // Validar option_id
+    $list_id = 'odonto_' . strtolower($intervention_type);
+    $optionCheck = sqlQuery("SELECT option_id, notes FROM list_options WHERE list_id = ? AND option_id = ?", [$list_id, $option_id]);
+    if (empty($optionCheck)) {
+        sqlRollbackTrans();
+        echo json_encode(['success' => false, 'message' => xlt('Invalid option') . ": $option_id"]);
+        exit;
     }
 
-    if ($success && $last_history_id) {
-        addForm($encounter, "Odontogram", $last_history_id, "odontogram", $pid, $authorized);
+    $query = "INSERT INTO form_odontogram_history (date, pid, encounter, user, groupname, authorized, activity, odontogram_id, intervention_type, tooth_id, option_id, code, notes, svg_style) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $bind = [$pid, $encounter, $user, $groupname, $authorized, $activity, $odontogram_id, $intervention_type, $tooth_id, $option_id, $code, $notes, $svg_style];
+    $newid = sqlInsert($query, $bind);
+    $insertedIds[] = $newid;
+
+    // Registrar formulario en OpenEMR
+    if ($formid == 0) {
+        $formid = addForm($encounter, "Odontogram", $newid, "odontogram", $pid, $user, $groupname, $authorized);
     }
 }
 
-ob_end_clean();
-header('Content-Type: application/json');
-if ($success) {
-    echo json_encode(['success' => true, 'id' => $last_history_id]);
-} else {
-    http_response_code(500);
-    echo json_encode(['error' => xl('Failed to save some changes')]);
-}
-exit;
+sqlCommitTrans();
+echo json_encode(['success' => true, 'message' => xlt('Interventions saved successfully'), 'ids' => $insertedIds, 'formid' => $formid]);
+?>

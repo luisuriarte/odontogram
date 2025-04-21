@@ -1,42 +1,21 @@
 <?php
-ob_start();
 require_once("../../../globals.php");
-header('Content-Type: application/json');
+require_once("$srcdir/translation.inc.php");
 
-$interventionType = $_POST['type'] ?? '';
-
-$listIds = [
-    'diagnosis' => 'odonto_diagnosis',
-    'issue' => 'odonto_issue',
-    'procedure' => 'odonto_procedures'
-];
-
-$listId = $listIds[strtolower($interventionType)] ?? '';
-if (empty($listId)) {
-    ob_end_clean();
-    echo json_encode(['error' => xl('Invalid or missing intervention type')]);
-    exit;
-}
-
-$sql = "SELECT option_id, title, notes AS style, codes 
-        FROM list_options 
-        WHERE list_id = ? 
-        ORDER BY title";
-$result = sqlStatement($sql, [$listId]);
+$lists = ['odonto_diagnosis', 'odonto_issue', 'odonto_procedures'];
 $options = [];
 
-while ($row = sqlFetchArray($result)) {
-    $row['title'] = xl($row['title']);
-    $row['style'] = $row['style'] ?: ''; // Asegurar que el color no sea null
-    $options[] = $row;
+foreach ($lists as $list) {
+    $result = sqlStatement("SELECT option_id, title, codes, notes FROM list_options WHERE list_id = ? AND activity = 1 ORDER BY seq", [$list]);
+    while ($row = sqlFetchArray($result)) {
+        $options[$list][] = [
+            'option_id' => $row['option_id'],
+            'title' => xl($row['title']),
+            'codes' => $row['codes'],
+            'notes' => $row['notes']
+        ];
+    }
 }
 
-if (empty($options)) {
-    ob_end_clean();
-    echo json_encode(['error' => xl('No options found for') . ' ' . htmlspecialchars($listId)]);
-    exit;
-}
-
-ob_end_clean();
 echo json_encode($options);
-exit;
+?>
